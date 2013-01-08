@@ -1,0 +1,50 @@
+DATA FILE FORMAT
+----------------
+
+Data should be provided in JSON format.
+The entire data set should be an array of objects (as in, the entire text document should start with "[" and end with "]").
+Each item is a collection of properties, which should be written as follows:
+
+{                                   <- open curly bracket
+	"key": value,                   <- each key should be in double quotes, followed by colon; value depends;
+	                                   remember about comma if it's not the last key-value pair in a set
+	"another_key": another_value
+},                                  <- close curly bracket; comma follows if it's not the last set
+
+----------------
+
+To demonstrate on the example entry, total of five properties are to be included:
+
+{
+	"id": 3,
+	
+	"name": "SLEEVELESS STUD CHECK SHIRT",
+	"description": "Sleeveless check shirt with front poppers and stud detail pockets. 100% Cotton. Machine washable.",
+	"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/13S01DPNK_normal.jpg",
+	
+	"outfits": [2, 3]
+}
+
+id          - an integer, used to indentify the product uniquely; doesn't have to be sequential,
+              but needs to be unique; no two products should have the same ID
+
+name        - name of the product, as it will be displayed; simple text wrapped in double quotes
+
+description - short description of a product, as it will be displayed; again, simple text wrapped in double quotes
+
+photo       - URL pointing to the image of the product; web address, accessible from browsers, wrapped in double quotes
+
+outfits     - list of outfits of which the product is the part; each outfit can from single item of clothing to many;
+              additionally, clothes can be part of many outfits; with numbers used to identify the outfits, all items
+			  that have the same number listed will be part of the same set; similarly, one item can have multiple numbers
+			  to indicate it being a part of multiple outfits; it should be a list of integers, separated by comma,
+			  wrapped in square brackets
+
+Additional file has been attached, named "data_example.json". It's an example of how such data file should look. It contains
+several example products (taken from Topshop's website), with their name, description and photo URL, as well as list of
+which outfits the item belongs to.
+
+Should any validation be needed on whether the file was properly formatted, http://jsonlint.com/ can be visited.
+A simple site for JSON validation, can be used by copying the entire data document into the text area and clicking "Validate".
+If, under results, "Valid JSON" on green background is visible, the file is properly formatted. Otherwise, an error on red
+background will give the line number on where it encountered a problem.
