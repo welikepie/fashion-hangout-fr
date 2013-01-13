@@ -9,19 +9,63 @@
 		<div class="main">
 			<section id="playback">
 
-
+				<div class="video">
+				
+					<h1><!--!name!--></h1>
+					<p><!--!description!--></p>
+					<video controls poster="<!--!poster!-->">
+						<!--% _.each(sources, function (val, key) { %-->
+						<source type="<!--!key!-->" src="<!--!val!-->">
+						<!--% }); %-->
+					</video>
+				
+				</div>
+				<div class="playlist">
+				
+					<ul class="items">
+						<li>
+							<img src="<!--!poster!-->" alt="<!--!name!-->">
+						</li>
+					</ul>
+					
+					<div class="controls">
+						<a class="prev">&laquo;</a>
+						<a class="next">&raquo;</a>
+					</div>
+				
+				</div>
 
 			</section>
-			<section id="items">
+			<section id="catalogue">
 
-
+				<ul class="items">
+				
+					<li>
+						<h1><!--!name!--></h1>
+						<img src="<!--!photo!-->" alt="<!--!name!-->">
+						<p><!--!description!--></p>
+						<a class="add">Add to wishlist</a>
+					</li>
+				
+				</ul>
 
 			</section>
 		</div>
 		<section id="wishlist">
 
-
+			<ul class="items">
+			
+				<li>
+					<h1><!--!name!--></h1>
+					<img src="<!--!photo!-->" alt="<!--!name!-->">
+					<p><!--!description!--></p>
+					<a class="remove">Remove from wishlist</a>
+				</li>
+			
+			</ul>
 
 		</section>
 	</body>
+	<script type="text/javascript" src="scripts/vendor.js"></script>
+	<script type="text/javascript" src="scripts/scripts.js"></script>
 </html>

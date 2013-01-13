@@ -68,7 +68,8 @@ module.exports = function (grunt) {
 			
 			'dev': {
 				'options': {
-					'devel': true
+					'devel': true,
+					'unused': false
 				},
 				'files': {
 					'src': ['gruntfile.js', 'scripts/*.js']
@@ -139,6 +140,18 @@ module.exports = function (grunt) {
 			'less': {
 				'files': 'styles/**/*.less',
 				'tasks': ['recess:lint', 'recess:dev']
+			},
+			'js-main': {
+				'files': 'scripts/*.js',
+				'tasks': ['jshint:dev', 'concat:custom']
+			},
+			'js-vendor': {
+				'files': 'scripts/vendor/**/*.js',
+				'tasks': ['concat:vendor']
+			},
+			'html': {
+				'files': 'index.htm',
+				'tasks': ['copy:html']
 			}
 		}
 	
