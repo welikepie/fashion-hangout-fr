@@ -33,10 +33,19 @@ p {
 	list-style: none;
 }
 
+.main {
+	position: relative;
+	display: block;
+	height: 100%;
+	margin: 0 @wishlist-width 0 0;
+	overflow: auto;
+}
+
 #playback {
 
 	display: block;
-	margin: 0 (@wishlist-width + @main-margin) (@main-margin * 2) @main-margin;
+	margin: 0 @main-margin (@main-margin * 2);
+	//margin: 0 (@wishlist-width + @main-margin) (@main-margin * 2) @main-margin;
 	overflow: hidden;
 	
 	background: @background-color;

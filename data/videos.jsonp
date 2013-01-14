@@ -1,4 +1,4 @@
-[
+jsonp1([
 	{
 		"id": 1,
 		"outfit_id": 1,
@@ -36,4 +36,4 @@
 			"video/ogg": "http://upload.wikimedia.org/wikipedia/commons/7/75/Sintel_movie_720x306.ogv"
 		}
 	}
-]
+]);

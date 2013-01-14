@@ -558,7 +558,7 @@
 	
 	Catalogue = CollectionView.extend({
 	
-		'initialize': function (opts) {
+		'initialize': function () {
 		
 			CollectionView.prototype.initialize.apply(this, arguments);
 			
@@ -588,18 +588,14 @@
 	
 	Wishlist = CollectionView.extend({
 	
-		'initialize': function (opts) {
+		'initialize': function () {
 			
 			CollectionView.prototype.initialize.apply(this, arguments);
 			
 			if (!(this.collection instanceof Outfit)) {
 				this.collection = new Outfit();
-				console.log('Created new Outfit for wishlist: ', this.collection);
 			}
 			
-			this.listenTo(this.collection,' all', function () {
-				console.log('Event on wishlist outfit: ', arguments);
-			});
 			this.listenTo(this.collection, 'add remove reset', this.render);
 		
 		},
@@ -756,27 +752,21 @@
 			});
 		
 		$.ajax({
-			'url': '../data/videos.json',
+			'url': '../data/videos.jsonp',
 			'type': 'GET',
-			'dataType': 'json',
+			'dataType': 'jsonp',
 			'success': function (data) {
 				video_data = data;
 				process_func();
-			},
-			'error': function () {
-				console.log('Error processing video data: ', arguments);
 			}
 		});
 		$.ajax({
-			'url': '../data/clothing.json',
+			'url': '../data/clothing.jsonp',
 			'type': 'GET',
-			'dataType': 'json',
+			'dataType': 'jsonp',
 			'success': function (data) {
 				clothing_data = data;
 				process_func();
-			},
-			'error': function () {
-				console.log('Error processing clothing data: ', arguments);
 			}
 		});
 	

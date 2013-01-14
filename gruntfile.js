@@ -117,10 +117,14 @@ module.exports = function (grunt) {
 			'css': {
 				'options': {
 					'preprocess': function (content) {
-						return content.replace(
-							/<link(?:[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*|[^>]*href="([^"]+)"[^>]*rel="stylesheet"[^>]*)>/i,
-							"<style type=\"text/css\"><%= grunt.file.read('build/$1') %></style>"
-						);
+						return content
+							.replace(
+								/<link(?:[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*|[^>]*href="([^"]+)"[^>]*rel="stylesheet"[^>]*)>/i,
+								"<style type=\"text/css\"><%= grunt.file.read('build/$1') %></style>"
+							).replace(
+								/<!--<base(?:[^>]*)>-->/i,
+								"<base href=\"https://raw.github.com/welikepie/fashion-hangout-app/v1/build/\">"
+							);
 					}
 				},
 				'files': {'build/index.htm': 'index.htm'}
