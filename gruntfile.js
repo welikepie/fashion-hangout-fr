@@ -19,7 +19,8 @@ module.exports = function (grunt) {
 					'compile': false,
 					'compress': false,
 					'noIDs': false,
-					'noUniversalSelectors': false
+					'noUniversalSelectors': false,
+					'noOverqualifying': false
 				}
 			},
 			

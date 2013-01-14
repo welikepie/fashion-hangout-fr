@@ -719,6 +719,12 @@
 	
 	});
 	
+	// Strictly interface bits below
+	// (one-off, no need for Backbone.View.render)
+	$('.toggle-wishlist').on('click', function () {
+		$('.sidebar').toggleClass('open');
+	});
+	
 	(function () {
 	
 		var video_data,
