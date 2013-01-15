@@ -677,12 +677,39 @@
 	
 	Wishlist = CollectionView.extend({
 	
-		'initialize': function () {
+		'shareUrl': null,
+		'shareButton': null,
+	
+		'initialize': function (opts) {
 			
 			CollectionView.prototype.initialize.apply(this, arguments);
 			
 			if (!(this.collection instanceof Outfit)) {
 				this.collection = new Outfit();
+			}
+			
+			if (('shareUrl' in opts) && (typeof opts.shareUrl === 'string')) {
+				this.shareUrl = opts.shareUrl;
+			} else {
+				throw new Error('We need base for shares!');
+			}
+			
+			console.log(this.$el.find('.share'));
+			if (this.$el.find('.share').length) {
+				this.shareButton =
+					this.$el
+						.find('.share')
+						.on('click', function () {
+						
+							if (this.collection.length) {
+								window.open(
+									'https://plus.google.com/share?url=' + encodeURIComponent(this.shareButton.fullUrl),
+									'',
+									'menubar=no,toolbar=no,resizable=yes,scrollbars=yes,height=600,width=600'
+								);
+							}
+						
+						}.bind(this));
 			}
 			
 			this.listenTo(this.collection, 'add remove reset', this.render);
@@ -702,6 +729,8 @@
 					return el;
 				
 				}.bind(this)));
+			
+			this.shareButton.fullUrl = this.shareUrl + '?c=' + this.collection.pluck('id').join(',');
 			
 			return this;
 		
@@ -803,7 +832,8 @@
 		
 			'el': $('#wishlist').get(0),
 			'container': $('#wishlist .items').get(0),
-			'template': $('#wishlist .items li').get(0)
+			'template': $('#wishlist .items li').get(0),
+			'shareUrl': 'http://dev.welikepie.com/fashion-share/'
 		
 		})
 	
@@ -812,6 +842,10 @@
 	// Strictly interface bits below
 	// (one-off, no need for Backbone.View.render)
 	$('.toggle-wishlist').on('click', function () {
+		var val = $(this).attr('data-switch');
+		$(this).attr('data-switch', this.innerHTML);
+		this.innerHTML = val;
+		
 		$('.sidebar').toggleClass('open');
 	});
 	

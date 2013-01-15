@@ -151,6 +151,7 @@ p {
 	
 	#catalogue, #wishlist {
 	
+		position: relative;
 		width: 100%;
 		
 		button, > h1 {
@@ -162,6 +163,12 @@ p {
 		> h1 {
 			line-height: @baseline * 2;
 			text-align: center;
+		}
+		
+		.share {
+			position: absolute;
+			top: 16px; right: 16px;
+			cursor: pointer;
 		}
 		
 		.items {
