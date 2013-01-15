@@ -64,7 +64,7 @@
 			Backbone.View.prototype.initialize.apply(this, args);
 			
 			if ('container' in opts) {
-				if (typeof opts.container === 'object'/*(opts.container === this.el) || ($.contains(this.el, opts.container))*/) {
+				if ((opts.container === this.el) || ($.contains(this.el, opts.container))) {
 					this.container = opts.container;
 					this.$container = $(this.container);
 				} else if ((typeof opts.container === 'string') && $(opts.container, this.el).length) {
@@ -407,40 +407,129 @@
 	
 	});
 	
-	PlaylistView = CollectionView.extend({
+	PlaylistView = CollectionView.extend((function () {
 	
-		'initialize': function (opts) {
+		var setup = {},
+		
+			contents_width = 0,
+			container_width = 0,
+			adjust_width,
+			
+			current_index = 0,
+			max_index = 0,
+			adjust_position;
+		
+		adjust_width = _.debounce(function () {
+		
+			var items = this.$container.children(),
+				width = 0,
+				i;
+			
+			items.each(function (index) { width += $(this).width() + 16; });
+			contents_width = width;
+			
+			for (i = width = 0; i < items.length; i += 1) {
+				width += items.eq(i).width() + 16;
+				if (contents_width - width < container_width) {
+					max_index = i + 1;
+					break;
+				}
+			}
+		
+		}, 250);
+		
+		adjust_position = _.debounce(function (index) {
+		
+			var items = this.$container.children(),
+				new_offset, old_offset;
+			
+			// Adjust index
+			if (index < 0) { index = 0; }
+			if (index >= items.length) { index = items.length - 1; }
+			if (index > max_index) { index = max_index; }
+			
+			// Obtain existing index
+			old_offset = this.$container.css('left').match(/^(-?[0-9]+)px$/i);
+			if (old_offset) { old_offset = parseInt(old_offset[1], 10); } else { old_offset = 0; }
+			new_offset = items.eq(index).position().left;
+			
+			if ((contents_width - new_offset) < container_width) {
+				new_offset = contents_width - container_width;
+			}
+			
+			if (old_offset !== new_offset) {
+				this.$container.css('left', (new_offset * -1) + 'px');
+			}
+			
+			current_index = index;
+		
+		}, 250);
+		
+		setup.controls = null;
+		
+		setup.initialize = function (opts) {
 		
 			if (('collection' in opts) && (opts.collection instanceof Playlist)) {
 			
 				CollectionView.prototype.initialize.apply(this, arguments);
 				
+				if ('controls' in opts) {
+					this.controls = {
+						'prev': $('.prev', opts.controls),
+						'next': $('.next', opts.controls)
+					};
+				}
+				
+				adjust_position = adjust_position.bind(this);
+				adjust_width = adjust_width.bind(this);
+				container_width = this.$container.width();
+				
 				this.listenTo(this.collection, 'currentChanged', this.render);
+				this.controls.prev.on('click', this.scrollPrev);
+				this.controls.next.on('click', this.scrollNext);
 				this.render();
 			
 			} else {
 				throw new Error('Collection of type Playlist is required.');
 			}
 		
-		},
+		};
 		
-		'render': _.debounce(function () {
+		setup.scrollTo = function (index) {
+			adjust_position(index);
+		};
+		
+		setup.scrollPrev = function () {
+			adjust_position(current_index - 1);
+		};
+		
+		setup.scrollNext = function () {
+			adjust_position(current_index + 1);
+		};
+		
+		setup.render = _.debounce(function () {
 		
 			this.$container
 				.empty()
 				.append(this.collection.map(function (model) {
 				
-					return $(this.template(model.toJSON()))
+					var el = $(this.template(model.toJSON()));
+					el
 						.on('click', this.collection.setCurrent.bind(this.collection, model))
-						.get(0);
+						.find('img')
+							.on('load', adjust_width);
+					
+					return el.get(0);
 				
 				}.bind(this)));
 			
 			return this;
 		
-		}, 10)
+		}, 10);
 	
-	});
+		return setup;
+	
+	}()));
 	
 	VideoFeed = Backbone.View.extend({
 	
@@ -695,7 +784,8 @@
 				'collection': playlist,
 				'el': $('#playback .playlist').get(0),
 				'container': $('#playback .playlist .items').get(0),
-				'template': $('#playback .playlist .items li').get(0)
+				'template': $('#playback .playlist .items li').get(0),
+				'controls': $('#playback .controls').get(0)
 			
 			})
 		

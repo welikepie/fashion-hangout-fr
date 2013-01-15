@@ -35,5 +35,79 @@ jsonp1([
 			"video/webm": "http://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Sintel_movie_720x306.ogv/Sintel_movie_720x306.ogv.360p.webm",
 			"video/ogg": "http://upload.wikimedia.org/wikipedia/commons/7/75/Sintel_movie_720x306.ogv"
 		}
+	},
+	{
+		"id": 4,
+		"outfit_id": 1,
+		"name": "Elephants Dream",
+		"description": "Some blurb visible under the video name.",
+		
+		"poster": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Elephants_Dream_Emo_Proog_s6.jpg/640px-Elephants_Dream_Emo_Proog_s6.jpg",
+		"sources": {
+			"video/webm": "http://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Elephants_Dream_%28high_quality%29.ogv/Elephants_Dream_%28high_quality%29.ogv.360p.webm",
+			"video/ogg": "http://upload.wikimedia.org/wikipedia/commons/b/bd/Elephants_Dream.ogg"
+		}
+	},
+	{
+		"id": 5,
+		"outfit_id": 2,
+		"name": "Big Buck Bunny",
+		"description": "Another blurb about something under the video.",
+		
+		"poster": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Big_Buck_Bunny_Trailer_400p.ogg/500px--Big_Buck_Bunny_Trailer_400p.ogg.jpg",
+		"sources": {
+			"video/mp4": "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
+			"video/webm": "http://clips.vorwaerts-gmbh.de/big_buck_bunny.webm",
+			"video/ogg": "http://clips.vorwaerts-gmbh.de/big_buck_bunny.ogv"
+		}
+	},
+	{
+		"id": 6,
+		"outfit_id": 3,
+		"name": "Sintel",
+		"description": "Yet another line of description.",
+		
+		"poster": "http://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Sintel-screenshot-1.jpg/640px-Sintel-screenshot-1.jpg",
+		"sources": {
+			"video/webm": "http://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Sintel_movie_720x306.ogv/Sintel_movie_720x306.ogv.360p.webm",
+			"video/ogg": "http://upload.wikimedia.org/wikipedia/commons/7/75/Sintel_movie_720x306.ogv"
+		}
+	},
+	{
+		"id": 7,
+		"outfit_id": 1,
+		"name": "Elephants Dream",
+		"description": "Some blurb visible under the video name.",
+		
+		"poster": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Elephants_Dream_Emo_Proog_s6.jpg/640px-Elephants_Dream_Emo_Proog_s6.jpg",
+		"sources": {
+			"video/webm": "http://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Elephants_Dream_%28high_quality%29.ogv/Elephants_Dream_%28high_quality%29.ogv.360p.webm",
+			"video/ogg": "http://upload.wikimedia.org/wikipedia/commons/b/bd/Elephants_Dream.ogg"
+		}
+	},
+	{
+		"id": 8,
+		"outfit_id": 2,
+		"name": "Big Buck Bunny",
+		"description": "Another blurb about something under the video.",
+		
+		"poster": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Big_Buck_Bunny_Trailer_400p.ogg/500px--Big_Buck_Bunny_Trailer_400p.ogg.jpg",
+		"sources": {
+			"video/mp4": "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
+			"video/webm": "http://clips.vorwaerts-gmbh.de/big_buck_bunny.webm",
+			"video/ogg": "http://clips.vorwaerts-gmbh.de/big_buck_bunny.ogv"
+		}
+	},
+	{
+		"id": 9,
+		"outfit_id": 3,
+		"name": "Sintel",
+		"description": "Yet another line of description.",
+		
+		"poster": "http://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Sintel-screenshot-1.jpg/640px-Sintel-screenshot-1.jpg",
+		"sources": {
+			"video/webm": "http://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Sintel_movie_720x306.ogv/Sintel_movie_720x306.ogv.360p.webm",
+			"video/ogg": "http://upload.wikimedia.org/wikipedia/commons/7/75/Sintel_movie_720x306.ogv"
+		}
 	}
 ]);

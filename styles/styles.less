@@ -85,6 +85,7 @@ p {
 		padding: @baseline 0;
 		
 		.items {
+			position: relative;
 			height: @height + 4;
 			text-align: center;
 			white-space: nowrap;
@@ -112,7 +113,7 @@ p {
 			* {
 				position: absolute;
 				top: (@height - @button-height) / 2;
-				z-index: 3;
+				z-index: 2;
 				
 				display: block;
 				width: @button-width;
@@ -140,6 +141,7 @@ p {
 
 	position: fixed;
 	top: 0; right: 0;
+	z-index: 3;
 	width: @wishlist-width;
 	height: 100%;
 	overflow: auto;
