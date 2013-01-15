@@ -96,10 +96,6 @@ module.exports = function (grunt) {
 			'vendor': {
 				'options': {'separator': ";"},
 				'files': {'build/scripts/vendor.js': 'scripts/vendor/**/*.js'}
-			},
-			'css': {
-				'options': {'separator': "\n"},
-				'files': {'build/styles/styles.css': ['build/styles/styles.css', 'styles/*.css']}
 			}
 		
 		},
@@ -124,11 +120,11 @@ module.exports = function (grunt) {
 					'preprocess': function (content) {
 						return content
 							.replace(
-								/<link(?:[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*|[^>]*href="([^"]+)"[^>]*rel="stylesheet"[^>]*)>/i,
+								/<link(?:[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*|[^>]*href="([^"]+)"[^>]*rel="stylesheet"[^>]*)>/gi,
 								"<style type=\"text/css\"><%= grunt.file.read('build/$1') %></style>"
 							).replace(
 								/<!--<base(?:[^>]*)>-->/i,
-								"<base href=\"https://raw.github.com/welikepie/fashion-hangout-app/v1/build/\">"
+								"<base href=\"https://raw.github.com/welikepie/fashion-hangout-app/v2/build/\">"
 							);
 					}
 				},
@@ -140,9 +136,13 @@ module.exports = function (grunt) {
 		},
 		
 		'copy': {
-			'basic': {
+			'html': {
 				'files': {
-					'build/index.htm': 'index.htm',
+					'build/index.htm': 'index.htm'
+				}
+			},
+			'css': {
+				'files': {
 					'build/styles/': 'styles/*.css'
 				}
 			}
@@ -162,15 +162,20 @@ module.exports = function (grunt) {
 				'tasks': ['concat:vendor']
 			},
 			'html': {
-				'files': ['index.htm', 'styles/*.css'],
-				'tasks': ['copy:basic']
+				'files': 'index.htm',
+				'tasks': ['copy:html']
+			},
+			'css': {
+				'files': 'styles/*.css',
+				'tasks': ['copy:css']
 			}
 		}
 	
 	});
 	
-	grunt.registerTask('dev', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat:custom', 'concat:vendor', 'copy', 'watch']);
-	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'concat:css', 'process', 'clean:release']);
+	grunt.registerTask('dev', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy', 'watch']);
+	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:css', 'process', 'clean:release']);
+	grunt.registerTask('release-verbose', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'concat', 'copy:css', 'process', 'clean:release']);
 	grunt.registerTask('default', 'dev');
 	
 	/* ************************************************ */
