@@ -96,6 +96,10 @@ module.exports = function (grunt) {
 			'vendor': {
 				'options': {'separator': ";"},
 				'files': {'build/scripts/vendor.js': 'scripts/vendor/**/*.js'}
+			},
+			'css': {
+				'options': {'separator': "\n"},
+				'files': {'build/styles/styles.css': ['build/styles/styles.css', 'styles/*.css']}
 			}
 		
 		},
@@ -136,8 +140,11 @@ module.exports = function (grunt) {
 		},
 		
 		'copy': {
-			'html': {
-				'files': {'build/index.htm': 'index.htm'}
+			'basic': {
+				'files': {
+					'build/index.htm': 'index.htm',
+					'build/styles/': 'styles/*.css'
+				}
 			}
 		},
 		
@@ -155,15 +162,15 @@ module.exports = function (grunt) {
 				'tasks': ['concat:vendor']
 			},
 			'html': {
-				'files': 'index.htm',
-				'tasks': ['copy:html']
+				'files': ['index.htm', 'styles/*.css'],
+				'tasks': ['copy:basic']
 			}
 		}
 	
 	});
 	
-	grunt.registerTask('dev', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy', 'watch']);
-	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'process', 'clean:release']);
+	grunt.registerTask('dev', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat:custom', 'concat:vendor', 'copy', 'watch']);
+	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'concat:css', 'process', 'clean:release']);
 	grunt.registerTask('default', 'dev');
 	
 	/* ************************************************ */
