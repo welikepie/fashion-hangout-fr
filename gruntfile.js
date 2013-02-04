@@ -124,7 +124,7 @@ module.exports = function (grunt) {
 								"<style type=\"text/css\"><%= grunt.file.read('build/$1') %></style>"
 							).replace(
 								/<!--<base(?:[^>]*)>-->/i,
-								"<base href=\"https://raw.github.com/welikepie/fashion-hangout-app/v2/build/\">"
+								"<base href=\"https://dev.welikepie.com:444/fashion-hangout-app/\">"
 							);
 					}
 				},
@@ -138,7 +138,13 @@ module.exports = function (grunt) {
 		'copy': {
 			'html': {
 				'files': {
-					'build/index.htm': 'index.htm'
+					'build/index.htm': 'index.htm',
+					'build/.htaccess': '.htaccess'
+				}
+			},
+			'data': {
+				'files': {
+					'build/data/': 'data/*'
 				}
 			},
 			'css': {
@@ -169,13 +175,26 @@ module.exports = function (grunt) {
 				'files': 'styles/*.css',
 				'tasks': ['copy:css']
 			}
+		},
+		
+		'ftp-deploy': {
+			'build': {
+				'auth': {
+					'host': 'dev.welikepie.com',
+					'port': 21,
+					'authKey': 'user'
+				},
+				'src': 'build',
+				'dest': '/Development/fashion-hangout-app'
+			}
 		}
 	
 	});
 	
 	grunt.registerTask('dev', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy', 'watch']);
-	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:css', 'process', 'clean:release']);
-	grunt.registerTask('release-verbose', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'concat', 'copy:css', 'process', 'clean:release']);
+	grunt.registerTask('dev-deploy', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy:css', 'copy:data', 'process', 'clean:release', 'ftp-deploy']);
+	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:css', 'copy:data', 'process', 'clean:release']);
+	grunt.registerTask('release-deploy', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:css', 'copy:data', 'process', 'clean:release', 'ftp-deploy']);
 	grunt.registerTask('default', 'dev');
 	
 	/* ************************************************ */
@@ -186,6 +205,7 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-contrib-watch');
+	grunt.loadNpmTasks('grunt-ftp-deploy');
 	grunt.loadNpmTasks('grunt-recess');
 	
 	grunt.registerMultiTask('process', 'Process files using Grunt templating.', function() {

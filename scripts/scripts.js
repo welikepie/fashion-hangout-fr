@@ -832,7 +832,7 @@
 			'el': $('#wishlist').get(0),
 			'container': $('#wishlist .items').get(0),
 			'template': $('#wishlist .items li').get(0),
-			'shareUrl': 'http://dev.welikepie.com/fashion-share/'
+			'shareUrl': 'http://dev.welikepie.com/fashion-hangout-app/share/'
 		
 		})
 	
@@ -881,7 +881,7 @@
 			});
 		
 		$.ajax({
-			'url': '../data/videos.jsonp',
+			'url': 'data/videos.jsonp',
 			'type': 'GET',
 			'dataType': 'jsonp',
 			'success': function (data) {
@@ -890,7 +890,7 @@
 			}
 		});
 		$.ajax({
-			'url': '../data/clothing.jsonp',
+			'url': 'data/clothing.jsonp',
 			'type': 'GET',
 			'dataType': 'jsonp',
 			'success': function (data) {
