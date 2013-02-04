@@ -1,4 +1,4 @@
-/*global $:true, _:true, Backbone:true */
+/*global $:true, _:true, Backbone:true, gapi:true */
 (function () {
 	"use strict";
 	
@@ -7,7 +7,8 @@
 		'evaluate' : /(?:&lt;|<)!--%(.+?)%--(?:>|&gt;)/g
 	};
 	
-	var CollectionView,
+	var SubView,
+		CollectionView,
 	
 		Video,
 		Playlist,
@@ -18,40 +19,27 @@
 		Outfit,
 		Catalogue,
 		Wishlist,
+
+		MessageBus,
 		
-		AppView,
-		
-		E;
+		AppView;
+
+	SubView = Backbone.View.extend({
+		'app': null,
+		'setApp': function (app) {
+			this.app = app;
+			this.appInitialize(this.app);
+			this.trigger('appSet', this.app);
+		},
+		'initialize': function (opts) {
+			opts = opts || {};
+			Backbone.View.prototype.initialize.apply(this, arguments);
+			if ('app' in opts) { this.setApp(opts.app); }
+		},
+		'appInitialize': function (app) {}
+	});
 	
-	E = function (tag, attrs/*, content*/) {
-	
-		var i, node = document.createElement(tag);
-		
-		if ((typeof attrs !== 'undefined') && (attrs !== null)) {
-			for (i in attrs) {
-				if (attrs.hasOwnProperty(i)) {
-					node.setAttribute(i, attrs[i]);
-				}
-			}
-		}
-		
-		if (arguments.length > 2) {
-			for (i = 2; i < arguments.length; i += 1) {
-			
-				if (typeof arguments[i] === 'string') {
-					node.innerHTML += arguments[i];
-				} else if (('nodeType' in arguments[i]) && (arguments[i].nodeType === 1)) {
-					node.appendChild(arguments[i]);
-				}
-			
-			}
-		}
-		
-		return node;
-	
-	};
-	
-	CollectionView = Backbone.View.extend({
+	CollectionView = SubView.extend({
 	
 		'container': null,
 		'template': null,
@@ -60,8 +48,7 @@
 		
 			var temp, template_func;
 			
-			var args = [_.pick(opts, 'collection', 'el')];
-			Backbone.View.prototype.initialize.apply(this, args);
+			SubView.prototype.initialize.call(this, _.pick(opts, 'collection', 'el'));
 			
 			if ('container' in opts) {
 				if ((opts.container === this.el) || ($.contains(this.el, opts.container))) {
@@ -273,7 +260,7 @@
 			this.on('reset', function (collection) {
 				this.setCurrent((collection.length > 0) ? 0 : null);
 			});
-			
+
 			// Trigger reset to fire all relevant events on initialisation
 			this.trigger('reset', this);
 		
@@ -417,7 +404,14 @@
 			
 			current_index = 0,
 			max_index = 0,
-			adjust_position;
+			adjust_position,
+
+			admin_only = function (wrapped) {
+				var admin = (this.app && this.app.admin);
+				return function () {
+					if (admin) { wrapped.apply(this, arguments); }
+				};
+			};
 		
 		adjust_width = _.debounce(function () {
 		
@@ -466,10 +460,12 @@
 		}, 250);
 		
 		setup.controls = null;
-		
+
 		setup.initialize = function (opts) {
 		
 			if (('collection' in opts) && (opts.collection instanceof Playlist)) {
+
+				admin_only = admin_only.bind(this);
 			
 				CollectionView.prototype.initialize.apply(this, arguments);
 				
@@ -485,14 +481,22 @@
 				container_width = this.$container.width();
 				
 				this.listenTo(this.collection, 'currentChanged', this.render);
-				this.controls.prev.on('click', this.scrollPrev);
-				this.controls.next.on('click', this.scrollNext);
+				this.controls.prev.on('click', admin_only(this.scrollPrev).bind(this));
+				this.controls.next.on('click', admin_only(this.scrollNext).bind(this));
 				this.render();
 			
 			} else {
 				throw new Error('Collection of type Playlist is required.');
 			}
 		
+		};
+
+		setup.appInitialize = function (app) {
+			console.log('App set to ', app);
+			this.listenTo(app, 'setAdmin', function (admin) {
+				console.log('setAdmin to ', admin);
+				if (this.controls) { this.$el[admin ? 'addClass' : 'removeClass']('active'); }
+			});
 		};
 		
 		setup.scrollTo = function (index) {
@@ -515,7 +519,12 @@
 				
 					var el = $(this.template(model.toJSON()));
 					el
-						.on('click', this.collection.setCurrent.bind(this.collection, model))
+						.on('click', function () {
+							if (this.app.admin) {
+								this.collection.setCurrent(model);
+								gapi.hangout.data.sendMessage('playlist:' + this.collection.indexOf(model));
+							}
+						}.bind(this))
 						.find('img')
 							.on('load', adjust_width);
 					
@@ -531,7 +540,7 @@
 	
 	}()));
 	
-	VideoFeed = Backbone.View.extend({
+	VideoFeed = SubView.extend({
 	
 		'feed': null,
 		'template': null,
@@ -541,7 +550,7 @@
 		
 			var temp, template_func;
 		
-			Backbone.View.prototype.initialize.apply(this, [_.pick(opts, 'collection', 'el')]);
+			SubView.prototype.initialize.apply(this, [_.pick(opts, 'collection', 'el', 'app')]);
 			
 			if ('feed' in opts) {
 			
@@ -580,6 +589,12 @@
 			
 			this.listenTo(this.collection, 'currentChanged', this.render);
 
+		},
+
+		'appInitialize': function (app) {
+			if (this.playlist) {
+				this.playlist.setApp(app);
+			}
 		},
 		
 		'render': _.debounce(function () {
@@ -736,12 +751,102 @@
 		}, 10)
 	
 	});
+
+	MessageBus = SubView.extend({
+
+		'template': null,
+		'queue': null,
+
+		'initialize': function (opts) {
+
+			var debounced_render;
+
+			opts = opts || {};
+			SubView.prototype.initialize.apply(this, arguments);
+			if ('template' in opts) {
+				this.template = opts.template;
+			}
+
+			this.render = (function () {
+
+				var queue = [],
+					func = function () {
+						var temp;
+						while (queue.length) {
+							temp = queue.shift();
+
+							console.log('MESSAGE: ', temp);
+
+						}
+					}.bind(this),
+					debounced = _.debounce(func, 1000);
+				func.add = function (item) {
+					queue.push(item);
+					debounced();
+				};
+
+				return func;
+
+			}.apply(this));
+
+			this.queue = [];
+			debounced_render = _.debounce(this.render.bind(this), 1000);
+			gapi.hangout.data.onMessageReceived.add(function (ev) {
+				this.process(ev.message);
+			}.bind(this));
+
+		},
+
+		'process': function (message) {
+
+			if ((typeof message === 'object') && ('message' in message)) { message = message.message; }
+			var match = message.match(/^([^:]+):(.+)$/);
+
+			console.log('Parsed message: ', message, match);
+
+			// Display messages
+			if (match[1] === 'message') {
+				console.log('Dropping message.');
+				this.render.add(match[2]);
+
+			}
+
+			// Playback
+			else if (match[1] === 'playback') {
+				this.app.video[match[2]]();
+				console.log('Setting playback.');
+				this.render.add('Video has been ' + (match[2] === 'pause' ? 'paused.' : 'started.'));
+			}
+
+			// Playlist change
+			else if (match[1] === 'playlist') {
+				console.log('Setting index ', parseInt(match[2], 10), ' at ', this.app.video.collection);
+				this.app.video.collection.setCurrent(parseInt(match[2], 10));
+				this.render.add('Video has changed to another one.');
+			}
+
+		},
+
+		'render': function () {
+			var temp;
+			while (this.queue.length) {
+
+				temp = this.queue.shift();
+				console.log('MESSAGE: ', temp);
+
+			}
+		}
+
+	});
 	
 	AppView = Backbone.View.extend({
 	
 		'video': null,
 		'catalogue': null,
 		'wishlist': null,
+		'messages': null,
+
+		'admin': false,
 		
 		'initialize': function (opts) {
 		
@@ -754,20 +859,28 @@
 				
 				if (('video' in opts) && (opts.video instanceof VideoFeed)) {
 					this.video = opts.video;
+					this.video.setApp(this);
 				} else {
 					throw new Error('We need a VideoFeed.');
 				}
 				
 				if (('catalogue' in opts) && (opts.catalogue instanceof Catalogue)) {
 					this.catalogue = opts.catalogue;
+					this.catalogue.setApp(this);
 				} else {
 					throw new Error('We need a Catalogue.');
 				}
 				
 				if (('wishlist' in opts) && (opts.wishlist instanceof Wishlist)) {
 					this.wishlist = opts.wishlist;
+					this.wishlist.setApp(this);
 				} else {
 					throw new Error('We need a Wishlist.');
+				}
+
+				if (('messages' in opts) && (opts.messages instanceof MessageBus)) {
+					this.messages = opts.messages;
+					this.messages.setApp(this);
 				}
 				
 				this.listenTo(this.collection, 'currentChanged', function (current) {
@@ -781,63 +894,176 @@
 					this.catalogue.render();
 				
 				}.bind(this));
-				
+
 				this.listenTo(this.catalogue, 'addedToWishlist', function (item) {
 				
 					this.wishlist.collection.add(item);
+					gapi.hangout.data.sendMessage(
+						gapi.hangout.getLocalParticipant().person.displayName +
+						' has added ' + item.get('name') + ' to their wishlist.'
+					);
 				
 				}.bind(this));
 			
 			} else {
 				throw new Error('Need a playlist.');
 			}
+
+			// ADMIN STATUS HANDLING
+			// Bit of code to manage who arrives at what time to ensure the
+			// user that has arrived first receives the admin status (and once
+			// that person leaves, the second user receives the admin status and
+			// so on).
+			var admin_assignment = function (participants) {
+
+				if ('enabledParticipants' in participants) {
+					participants = participants.enabledParticipants; 
+				}
+
+				var state = gapi.hangout.data.getState(),
+					local_id = gapi.hangout.getLocalParticipant().id,
+					oldest_id = _.chain(participants)
+						.pluck('id')
+						.min(function (id) { return (id in state) ? parseInt(state[id], 10) : (new Date()).getTime(); })
+						.value();
+
+				console.log('Running admin assignment...');
+				console.log('Local to oldest: ', local_id, oldest_id);
+				console.dir(state);
+
+				if (!this.admin && (local_id === oldest_id)) {
+					console.log('setAdmin TRUE');
+					this.admin = true;
+					this.trigger('setAdmin', this.admin);
+				} else if (this.admin && (local_id !== oldest_id)) {
+					console.log('setAdmin FALSE');
+					this.admin = false;
+					this.trigger('setAdmin', this.admin);
+				}
+
+			}.bind(this);
+
+			gapi.hangout.data.setValue(gapi.hangout.getLocalParticipant().id, (new Date()).getTime() + '');
+			gapi.hangout.onEnabledParticipantsChanged.add(admin_assignment);
+			admin_assignment(gapi.hangout.getEnabledParticipants());
 		
 		}
 	
 	});
 	
-	var playlist = new Playlist();
-	var app = new AppView({
+	// Initialize functionality once the Hangouts API loads correctly
+	var init_func = function () {
+
+		console.log(
+			'Same account? ',
+			gapi.hangout.getLocalParticipant(),
+			gapi.hangout.getEnabledParticipants(),
+			gapi.hangout.getLocalParticipant() === gapi.hangout.getEnabledParticipants()[0]
+		);
+
+		// Initialise appropriate data sets
+		var playlist = new Playlist();
 	
-		'collection': playlist,
+		var app = new AppView({
 		
-		'video': new VideoFeed({
-	
 			'collection': playlist,
-			'el': $('#playback').get(0),
-			'feed': $('#playback .video').get(0),
 			
-			'playlist': new PlaylistView({
-			
+			'video': new VideoFeed({
+		
 				'collection': playlist,
-				'el': $('#playback .playlist').get(0),
-				'container': $('#playback .playlist .items').get(0),
-				'template': $('#playback .playlist .items li').get(0),
-				'controls': $('#playback .controls').get(0)
+				'el': $('#playback').get(0),
+				'feed': $('#playback .video').get(0),
+				
+				'playlist': new PlaylistView({
+				
+					'collection': playlist,
+					'el': $('#playback .playlist').get(0),
+					'container': $('#playback .playlist .items').get(0),
+					'template': $('#playback .playlist .items li').get(0),
+					'controls': $('#playback .controls').get(0)
+				
+				})
 			
-			})
+			}),
+			
+			'catalogue': new Catalogue({
+			
+				'el': $('#catalogue').get(0),
+				'container': $('#catalogue .items').get(0),
+				'template': $('#catalogue .items li').get(0)
+			
+			}),
+			
+			'wishlist': new Wishlist({
+			
+				'el': $('#wishlist').get(0),
+				'container': $('#wishlist .items').get(0),
+				'template': $('#wishlist .items li').get(0),
+				'shareUrl': 'http://dev.welikepie.com/fashion-hangout-app/share/'
+			
+			}),
+
+			'messages': new MessageBus()
 		
-		}),
+		});
+
+		(function () {
 		
-		'catalogue': new Catalogue({
+			var video_data,
+				clothing_data,
+				
+				process_func = _.after(2, function () {
+				
+					var results;
+					
+					results = _.map(video_data, function (item) {
+						item.outfit = new Outfit();
+						return new Video(item);
+					});
+					
+					_.each(clothing_data, function (item) {
+					
+						var clothing, outfits = item.outfits;
+						delete item.outfits;
+						clothing = new Clothing(item);
+						
+						_.chain(results)
+							.filter(function (video) { return _.contains(outfits, video.get('outfit_id')); })
+							.each(function (video) { video.get('outfit').add(clothing); });
+					
+					});
+					
+					_.invoke(results, 'unset', 'outfit_id');
+					
+					playlist.reset(results);
+				
+				});
+			
+			$.ajax({
+				'url': 'data/videos.jsonp',
+				'type': 'GET',
+				'dataType': 'jsonp',
+				'success': function (data) {
+					video_data = data;
+					process_func();
+				}
+			});
+			$.ajax({
+				'url': 'data/clothing.jsonp',
+				'type': 'GET',
+				'dataType': 'jsonp',
+				'success': function (data) {
+					clothing_data = data;
+					process_func();
+				}
+			});
 		
-			'el': $('#catalogue').get(0),
-			'container': $('#catalogue .items').get(0),
-			'template': $('#catalogue .items li').get(0)
-		
-		}),
-		
-		'wishlist': new Wishlist({
-		
-			'el': $('#wishlist').get(0),
-			'container': $('#wishlist .items').get(0),
-			'template': $('#wishlist .items li').get(0),
-			'shareUrl': 'http://dev.welikepie.com/fashion-hangout-app/share/'
-		
-		})
+		}());
 	
-	});
-	
+	};
+	if (gapi.hangout.isApiReady()) { init_func(); }
+	else { gapi.hangout.onApiReady.add(function () { try { init_func(); } catch (e) { console.log('ERROR: ', e); } }); }
+		
 	// Strictly interface bits below
 	// (one-off, no need for Backbone.View.render)
 	$('.toggle-wishlist').on('click', function () {
@@ -847,60 +1073,5 @@
 		
 		$('.sidebar').toggleClass('open');
 	});
-	
-	(function () {
-	
-		var video_data,
-			clothing_data,
-			
-			process_func = _.after(2, function () {
-			
-				var results;
-				
-				results = _.map(video_data, function (item) {
-					item.outfit = new Outfit();
-					return new Video(item);
-				});
-				
-				_.each(clothing_data, function (item) {
-				
-					var clothing, outfits = item.outfits;
-					delete item.outfits;
-					clothing = new Clothing(item);
-					
-					_.chain(results)
-						.filter(function (video) { return _.contains(outfits, video.get('outfit_id')); })
-						.each(function (video) { video.get('outfit').add(clothing); });
-				
-				});
-				
-				_.invoke(results, 'unset', 'outfit_id');
-				
-				playlist.reset(results);
-			
-			});
-		
-		$.ajax({
-			'url': 'data/videos.jsonp',
-			'type': 'GET',
-			'dataType': 'jsonp',
-			'success': function (data) {
-				video_data = data;
-				process_func();
-			}
-		});
-		$.ajax({
-			'url': 'data/clothing.jsonp',
-			'type': 'GET',
-			'dataType': 'jsonp',
-			'success': function (data) {
-				clothing_data = data;
-				process_func();
-			}
-		});
-	
-	}());
-	
-	window.app = app;
 
 }());
