@@ -9,6 +9,9 @@
 	</head>
 	<body>
 		<div class="main">
+			<div id="messages">
+				<div class="alert <!--!type!-->"><!--!message!--></div>
+			</div>
 			<section id="playback">
 
 				<div class="playlist">
@@ -29,7 +32,7 @@
 				
 					<h1><!--!name!--></h1>
 					<p><!--!description!--></p>
-					<video controls poster="<!--!poster!-->">
+					<video controls poster="<!--!poster!-->" autoplay>
 						<!--% _.each(sources, function (val, key) { %-->
 						<source type="<!--!key!-->" src="<!--!val!-->">
 						<!--% }); %-->

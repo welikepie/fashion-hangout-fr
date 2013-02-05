@@ -1,30 +1,101 @@
 /*global $:true, _:true, Backbone:true, gapi:true */
 (function () {
 	"use strict";
-	
+
 	_.templateSettings = {
 		'interpolate' : /(?:&lt;|<)!--!(.+?)!--(?:>|&gt;)/g,
 		'evaluate' : /(?:&lt;|<)!--%(.+?)%--(?:>|&gt;)/g
 	};
-	
-	var SubView,
+
+		// Utility Belt
+	var MessageBus,
+		AppView,
 		CollectionView,
-	
-		Video,
-		Playlist,
-		VideoFeed,
-		PlaylistView,
-		
-		Clothing,
-		Outfit,
-		Catalogue,
-		Wishlist,
+		admin,
 
-		MessageBus,
-		
-		AppView;
+		// Data Models
+		Video, Clothing,
 
-	SubView = Backbone.View.extend({
+		// Data Collections
+		Playlist, Outfit,
+
+		// Data Views & Controllers
+		VideoFeed, PlaylistView,
+		Catalogue, Wishlist,
+		MessageDisplay,
+
+		App;
+
+	// MESSAGE BUS
+	// A singleton for coordinating the communication
+	// with other instances of the fashion hangout app - especially
+	// the issue of syncing the admin status and playback.
+	MessageBus = (function (undefined) {
+
+		var Root = function () {
+
+			var message_pass = function (ev) {
+					this.receive(ev.message);
+				}.bind(this);
+
+			gapi.hangout.onApiReady.add(function () {
+				gapi.hangout.data.onMessageReceived.add(message_pass);
+			});
+
+		};
+
+		Root.prototype.statesToKeep = ['admin', 'playlist', 'playback'];
+
+		Root.prototype.send = function (type) {
+
+			var message, args = Array.prototype.slice.call(arguments, 1);
+			if (args.length === 1) { args = args[0]; }
+			message = ('' + type) + ':' + JSON.stringify(args);
+
+			this.sendRaw(message);
+
+		};
+
+		Root.prototype.sendEcho = function (type) {
+			var message, args = Array.prototype.slice.call(arguments, 1);
+			if (args.length === 1) { args = args[0]; }
+			message = ('' + type) + ':' + JSON.stringify(args);
+
+			this.sendRaw(message);
+			this.receive(message);
+		};
+
+		Root.prototype.sendRaw = gapi.hangout.data.sendMessage.bind(gapi.hangout.data);
+
+		Root.prototype.receive = function (message) {
+			console.log('Receiving message: ', message);
+			var match = message.match(/^([a-zA-Z0-9_-]+):(.+)$/);
+			if (match) {
+				match = [
+					match[1],
+					JSON.parse(match[2])
+				];
+				if (_.contains(this.statesToKeep, match[0])) { this.state.set(match[0], match[1]); }
+				this.trigger.apply(this, match);
+			}
+		};
+
+		Root.prototype.state = function (stateName) {
+			var val = gapi.hangout.data.getValue(stateName);
+			if (typeof val !== 'undefined') { val = JSON.parse(val); }
+			return val;
+		};
+
+		Root.prototype.state.set = function (stateName, stateValue) {
+			gapi.hangout.data.setValue(stateName, JSON.stringify(stateValue));
+		};
+
+		_.extend(Root.prototype, Backbone.Events);
+		return new Root();
+
+	}());
+
+	AppView = Backbone.View.extend({
 		'app': null,
 		'setApp': function (app) {
 			this.app = app;
@@ -38,8 +109,8 @@
 		},
 		'appInitialize': function (app) {}
 	});
-	
-	CollectionView = SubView.extend({
+
+	CollectionView = AppView.extend({
 	
 		'container': null,
 		'template': null,
@@ -48,7 +119,7 @@
 		
 			var temp, template_func;
 			
-			SubView.prototype.initialize.call(this, _.pick(opts, 'collection', 'el'));
+			AppView.prototype.initialize.call(this, _.pick(opts, 'collection', 'el'));
 			
 			if ('container' in opts) {
 				if ((opts.container === this.el) || ($.contains(this.el, opts.container))) {
@@ -86,24 +157,17 @@
 	
 	});
 
-	/**
-	Backbone model used as representation of a single video.
-	
-	A representation of a video to be played in the app, this class contains several
-	properties representative of that video. For informational purposes, name and short
-	description. For video playback, URL to poster (image used in place of video before it
-	starts being played) and collection of sources (URLs to videos of different codecs, along
-	with their MIME types, for embedding into the app).
-	Additionally, each video carries a Backbone collection of items that are being presented
-	in said video. These items will be displayed on the screen along with the video to interact with.
-	
-	@class Video
-	@extends Backbone.Model
-	@constructor
-	
-	@param {Object} [attributes]  Initial values of the model.
-	@param {Object} [options]     Additional configuration options.
-	**/
+	admin = function (wrapped) {
+		if (typeof wrapped === 'function') {
+			return function () {
+				if (admin()) { return wrapped.apply(this, arguments); }
+			};
+		} else {
+			var val = (typeof wrapped === 'string') ? wrapped : MessageBus.state('admin');
+			return (App.local.id === val);
+		}
+	};
+
 	Video = Backbone.Model.extend({
 	
 		/* MODEL PROPERTIES */
@@ -146,21 +210,6 @@
 			}
 		**/
 
-		/**
-		Implementation of `Backbone.Model.validate()` method.
-		
-		Validation ensures all the parameters are accounted for, as well as their types.
-		
-		`id` needs to be a positive integer.  
-		`name`, `description` and `poster` need to be valid strings.  
-		`sources` needs to have all its entries adhere to format of `[MIME type] => [video file URL]`.  
-		`outfit` needs to be an instance of `Outfit` collection.
-		
-		@method validate
-		@param  {Object} attrs      Model's attributes to be validated.
-		@return {undefined|String}  Error description if validation failed, nothing otherwise.
-		@private
-		**/
 		'validate': function (attrs) {
 			
 			// ID must be an integer equal or bigger than 0
@@ -200,22 +249,31 @@
 		}
 	
 	});
+
+	Clothing = Backbone.Model.extend({
 	
-	/**
-	Backbone collection of multiple videos, acting as a controllable playlist.
+		'validate': function (attrs) {
+			
+			// ID must be an integer equal or bigger than 0
+			if (!(
+				('id' in attrs) &&
+				(typeof attrs.id === 'number') &&
+				(attrs.id >= 0)
+			)) {
+				return 'ID is incorrect.';
+			}
+			
+			// Name, description and photo are simple strings
+			if (!_.all(['name', 'description', 'photo'], function (str) {
+				return ((str in attrs) && (typeof attrs[str] === 'string'));
+			})) {
+				return 'Text fields are incorrect.';
+			}
+			
+		}
 	
-	Ordered collection of videos, utilised by the playback interface both as means
-	to easily manage the details for both view and preview, as well as to allow for
-	an easier control of playback (by maintaining the state of current video, as well
-	as methods to easily switch to previous or next one).
-	
-	@class Playlist
-	@extends Backbone.Collection
-	@constructor
-	
-	@param {Array}  [models]      Initial contents of the collection.
-	@param {Object} [options]     Additional configuration options.
-	**/
+	});
+
 	Playlist = Backbone.Collection.extend({
 	
 		/**
@@ -393,7 +451,103 @@
 		}
 	
 	});
+
+	Outfit = Backbone.Collection.extend({
 	
+		'model': Clothing,
+		'comparator': 'id'
+	
+	});
+
+	VideoFeed = AppView.extend({
+	
+		'feed': null,
+		'template': null,
+		'playlist': null,
+	
+		'initialize': function (opts) {
+		
+			var temp, template_func;
+		
+			AppView.prototype.initialize.apply(this, [_.pick(opts, 'collection', 'el', 'app')]);
+			
+			if ('feed' in opts) {
+			
+				if (typeof opts.feed === 'object') {
+					this.feed = opts.feed;
+					temp = document.createElement('div');
+					$(opts.feed).clone().remove().appendTo(temp);
+					temp = temp.innerHTML;
+				} else {
+					temp = opts.feed;
+				}
+				
+				template_func = _.template(temp);
+				this.template = function (data) {
+					var temp = document.createElement('div');
+					temp.innerHTML = template_func(data);
+					return temp.removeChild(temp.childNodes[0]);
+				};
+			
+			} else {
+				throw new Error('We need a feed!');
+			}
+			
+			if (('playlist' in opts) && (opts.playlist instanceof PlaylistView)) {
+				this.playlist = opts.playlist;
+				if (this.playlist.collection !== this.collection) {
+					this.playlist.collection = this.collection;
+					this.playlist.render();
+				}
+			} else {
+				this.playlist = new PlaylistView({
+					'collection': this.collection,
+					'el': $(document.createElement('div')).appendTo(this.el).get(0)
+				});
+			}
+			
+			this.listenTo(this.collection, 'currentChanged', function (currentVideo) {
+				this.render();
+				if (admin()) { MessageBus.send('playlist', this.collection.indexOf(currentVideo)); }
+			});
+
+		},
+
+		'play': function () { $('video', this.feed).get(0).play(); },
+		'pause': function () { $('video', this.feed).get(0).pause(); },
+		
+		'render': _.debounce(function () {
+		
+			var current = this.collection.getCurrent(),
+				new_feed;
+			
+			if (current) {
+				new_feed = this.template(current.toJSON());
+			} else {
+				new_feed = this.template({
+					'name': ' ',
+					'description': 'Click on any of the videos below to start the playback!',
+					'poster': '',
+					'sources': {}
+				});
+			}
+
+			$('video', new_feed)
+				.on('ended', this.collection.nextVideo.bind(this.collection))
+				.on('play', function () { if (admin()) { MessageBus.send('playback', 'play'); } })
+				.on('pause', function () { if (admin()) { MessageBus.send('playback', 'pause'); } });
+			
+			if (this.feed) {
+				$(this.feed).replaceWith(new_feed);
+			} else {
+				this.$el.prepend(new_feed);
+			}
+			this.feed = new_feed;
+		
+		}, 10)
+	
+	});
+
 	PlaylistView = CollectionView.extend((function () {
 	
 		var setup = {},
@@ -404,14 +558,7 @@
 			
 			current_index = 0,
 			max_index = 0,
-			adjust_position,
-
-			admin_only = function (wrapped) {
-				var admin = (this.app && this.app.admin);
-				return function () {
-					if (admin) { wrapped.apply(this, arguments); }
-				};
-			};
+			adjust_position;
 		
 		adjust_width = _.debounce(function () {
 		
@@ -464,8 +611,6 @@
 		setup.initialize = function (opts) {
 		
 			if (('collection' in opts) && (opts.collection instanceof Playlist)) {
-
-				admin_only = admin_only.bind(this);
 			
 				CollectionView.prototype.initialize.apply(this, arguments);
 				
@@ -481,22 +626,20 @@
 				container_width = this.$container.width();
 				
 				this.listenTo(this.collection, 'currentChanged', this.render);
-				this.controls.prev.on('click', admin_only(this.scrollPrev).bind(this));
-				this.controls.next.on('click', admin_only(this.scrollNext).bind(this));
+				this.controls.prev.on('click', admin(this.scrollPrev).bind(this));
+				this.controls.next.on('click', admin(this.scrollNext).bind(this));
 				this.render();
+
+				this.listenTo(MessageBus, 'admin', function (id) {
+					console.log('Admin callback: ', admin(id));
+					console.dir(admin); console.dir(id); console.dir(admin(id));
+					this.$el[admin(id) ? 'addClass' : 'removeClass']('active');
+				});
 			
 			} else {
 				throw new Error('Collection of type Playlist is required.');
 			}
 		
-		};
-
-		setup.appInitialize = function (app) {
-			console.log('App set to ', app);
-			this.listenTo(app, 'setAdmin', function (admin) {
-				console.log('setAdmin to ', admin);
-				if (this.controls) { this.$el[admin ? 'addClass' : 'removeClass']('active'); }
-			});
 		};
 		
 		setup.scrollTo = function (index) {
@@ -516,18 +659,12 @@
 			this.$container
 				.empty()
 				.append(this.collection.map(function (model) {
-				
+
 					var el = $(this.template(model.toJSON()));
-					el
-						.on('click', function () {
-							if (this.app.admin) {
-								this.collection.setCurrent(model);
-								gapi.hangout.data.sendMessage('playlist:' + this.collection.indexOf(model));
-							}
-						}.bind(this))
-						.find('img')
-							.on('load', adjust_width);
-					
+
+					el.on('click', admin(this.collection.setCurrent).bind(this.collection, model))
+						.find('img').on('load', adjust_width);
+
 					return el.get(0);
 				
 				}.bind(this)));
@@ -539,127 +676,7 @@
 		return setup;
 	
 	}()));
-	
-	VideoFeed = SubView.extend({
-	
-		'feed': null,
-		'template': null,
-		'playlist': null,
-	
-		'initialize': function (opts) {
-		
-			var temp, template_func;
-		
-			SubView.prototype.initialize.apply(this, [_.pick(opts, 'collection', 'el', 'app')]);
-			
-			if ('feed' in opts) {
-			
-				if (typeof opts.feed === 'object') {
-					this.feed = opts.feed;
-					temp = document.createElement('div');
-					$(opts.feed).clone().remove().appendTo(temp);
-					temp = temp.innerHTML;
-				} else {
-					temp = opts.feed;
-				}
-				
-				template_func = _.template(temp);
-				this.template = function (data) {
-					var temp = document.createElement('div');
-					temp.innerHTML = template_func(data);
-					return temp.removeChild(temp.childNodes[0]);
-				};
-			
-			} else {
-				throw new Error('We need a feed!');
-			}
-			
-			if (('playlist' in opts) && (opts.playlist instanceof PlaylistView)) {
-				this.playlist = opts.playlist;
-				if (this.playlist.collection !== this.collection) {
-					this.playlist.collection = this.collection;
-					this.playlist.render();
-				}
-			} else {
-				this.playlist = new PlaylistView({
-					'collection': this.collection,
-					'el': $(document.createElement('div')).appendTo(this.el).get(0)
-				});
-			}
-			
-			this.listenTo(this.collection, 'currentChanged', this.render);
 
-		},
-
-		'appInitialize': function (app) {
-			if (this.playlist) {
-				this.playlist.setApp(app);
-			}
-		},
-		
-		'render': _.debounce(function () {
-		
-			var current = this.collection.getCurrent(),
-				new_feed;
-			
-			if (current) {
-			
-				new_feed = this.template(current.toJSON());
-				$('video', new_feed).on('ended', this.collection.nextVideo.bind(this.collection));
-			
-			} else {
-			
-				new_feed = this.template({
-					'name': ' ',
-					'description': 'Click on any of the videos below to start the playback!',
-					'poster': '',
-					'sources': {}
-				});
-			
-			}
-			
-			if (this.feed) {
-				$(this.feed).replaceWith(new_feed);
-			} else {
-				this.$el.prepend(new_feed);
-			}
-			this.feed = new_feed;
-		
-		}, 10)
-	
-	});
-	
-	Clothing = Backbone.Model.extend({
-	
-		'validate': function (attrs) {
-			
-			// ID must be an integer equal or bigger than 0
-			if (!(
-				('id' in attrs) &&
-				(typeof attrs.id === 'number') &&
-				(attrs.id >= 0)
-			)) {
-				return 'ID is incorrect.';
-			}
-			
-			// Name, description and photo are simple strings
-			if (!_.all(['name', 'description', 'photo'], function (str) {
-				return ((str in attrs) && (typeof attrs[str] === 'string'));
-			})) {
-				return 'Text fields are incorrect.';
-			}
-			
-		}
-	
-	});
-	
-	Outfit = Backbone.Collection.extend({
-	
-		'model': Clothing,
-		'comparator': 'id'
-	
-	});
-	
 	Catalogue = CollectionView.extend({
 	
 		'initialize': function () {
@@ -689,7 +706,7 @@
 		}, 10)
 	
 	});
-	
+
 	Wishlist = CollectionView.extend({
 	
 		'shareUrl': null,
@@ -752,222 +769,214 @@
 	
 	});
 
-	MessageBus = SubView.extend({
-
-		'template': null,
-		'queue': null,
-
+	MessageDisplay = AppView.extend({
 		'initialize': function (opts) {
-
-			var debounced_render;
-
-			opts = opts || {};
-			SubView.prototype.initialize.apply(this, arguments);
-			if ('template' in opts) {
-				this.template = opts.template;
-			}
-
-			this.render = (function () {
-
-				var queue = [],
-					func = function () {
-						var temp;
-						while (queue.length) {
-							temp = queue.shift();
-
-							console.log('MESSAGE: ', temp);
-
-						}
-					}.bind(this),
-					debounced = _.debounce(func, 1000);
-				func.add = function (item) {
-					queue.push(item);
-					debounced();
-				};
-
-				return func;
-
-			}.apply(this));
-
-			this.queue = [];
-			debounced_render = _.debounce(this.render.bind(this), 1000);
-			gapi.hangout.data.onMessageReceived.add(function (ev) {
-				this.process(ev.message);
-			}.bind(this));
-
-		},
-
-		'process': function (message) {
-
-			if ((typeof message === 'object') && ('message' in message)) { message = message.message; }
-			var match = message.match(/^([^:]+):(.+)$/);
-
-			console.log('Parsed message: ', message, match);
-
-			// Display messages
-			if (match[1] === 'message') {
-				console.log('Dropping message.');
-				this.render.add(match[2]);
-
-			}
-
-			// Playback
-			else if (match[1] === 'playback') {
-				this.app.video[match[2]]();
-				console.log('Setting playback.');
-				this.render.add('Video has been ' + (match[2] === 'pause' ? 'paused.' : 'started.'));
-			}
-
-			// Playlist change
-			else if (match[1] === 'playlist') {
-				console.log('Setting index ', parseInt(match[2], 10), ' at ', this.app.video.collection);
-				this.app.video.collection.setCurrent(parseInt(match[2], 10));
-				this.render.add('Video has changed to another one.');
-			}
-
-		},
-
-		'render': function () {
-			var temp;
-			while (this.queue.length) {
-
-				temp = this.queue.shift();
-				console.log('MESSAGE: ', temp);
-
-			}
-		}
-
-	});
-	
-	AppView = Backbone.View.extend({
-	
-		'video': null,
-		'catalogue': null,
-		'wishlist': null,
-		'messages': null,
-
-		'admin': false,
-		
-		'initialize': function (opts) {
-		
-			if (('collection' in opts) && (opts.collection instanceof Playlist)) {
 			
-				Backbone.View.prototype.initialize.apply(this, [{
-					'el': document.getElementsByTagName('body')[0],
-					'collection': opts.collection
-				}]);
-				
-				if (('video' in opts) && (opts.video instanceof VideoFeed)) {
-					this.video = opts.video;
-					this.video.setApp(this);
+			var template_func, temp;
+			opts = opts || {};
+			AppView.prototype.initialize.apply(this, arguments);
+			
+			if ('template' in opts) {
+				if (typeof opts.template === 'object') {
+					temp = document.createElement('div');
+					$(opts.template).remove().appendTo(temp);
+					temp = temp.innerHTML;
 				} else {
-					throw new Error('We need a VideoFeed.');
+					temp = opts.template;
 				}
 				
-				if (('catalogue' in opts) && (opts.catalogue instanceof Catalogue)) {
-					this.catalogue = opts.catalogue;
-					this.catalogue.setApp(this);
-				} else {
-					throw new Error('We need a Catalogue.');
-				}
-				
-				if (('wishlist' in opts) && (opts.wishlist instanceof Wishlist)) {
-					this.wishlist = opts.wishlist;
-					this.wishlist.setApp(this);
-				} else {
-					throw new Error('We need a Wishlist.');
-				}
+				template_func = _.template(temp);
+				this.template = function (data) {
+					console.log('Template with: ', data);
+					var temp = document.createElement('div');
+					temp.innerHTML = template_func(data);
+					return temp.removeChild(temp.childNodes[0]);
+				};
+			} else {
+				this.template = function () { return document.createElement('div'); };
+			}
 
-				if (('messages' in opts) && (opts.messages instanceof MessageBus)) {
-					this.messages = opts.messages;
-					this.messages.setApp(this);
-				}
-				
-				this.listenTo(this.collection, 'currentChanged', function (current) {
+			this.messages = (function () {
+				var t = _.extend([], Backbone.Events);
+				t.push = function () {
+					var result = Array.prototype.push.apply(this, arguments);
+					this.trigger('add', arguments);
+					return result;
+				};
+				t.unshift = function () {
+					var result = Array.prototype.unshift.apply(this, arguments);
+					this.trigger('add', arguments);
+					return result;
+				};
+				t.pop = function () {
+					var result = Array.prototype.pop.apply(this, arguments);
+					this.trigger('remove', arguments);
+					return result;
+				};
+				t.shift = function () {
+					var result = Array.prototype.shift.apply(this, arguments);
+					this.trigger('remove', arguments);
+					return result;
+				};
+				return t;
+			}());
 
-					if (current instanceof Video) {
-						this.catalogue.collection = current.get('outfit');
+			this.listenTo(this.messages, 'add', this.render);
+
+		},
+		'show': function (message, type) {
+			if (typeof type === 'string') { type = 'alert-' + type; }
+			else { type = ''; }
+			this.messages.push({
+				'message': message,
+				'type': type
+			});
+		},
+		'render': _.debounce(function () {
+			var el, fade_func = function () { $(this).remove(); };
+			while (this.messages.length) {
+				el = this.template(this.messages.shift());
+				window.setTimeout(fade_func.bind(el), 3000);
+				this.$el.append(el);
+			}
+		}, 500)
+	});
+
+	gapi.hangout.onApiReady.add(function () {
+
+		var playlist = new Playlist(),
+			messages = new MessageDisplay({
+				'el': $('#messages').get(0),
+				'template': $('#messages .alert').get(0)
+			});
+
+		// Have message display show stuff from message bus
+		messages.listenTo(MessageBus, 'message', messages.show);
+		messages.listenTo(MessageBus, 'playback', function (state) {
+			App.video[state]();
+			messages.show('Video has been ' + (state === 'pause' ? 'paused.' : 'resumed.'));
+		});
+
+		App = Backbone.View.extend({
+		
+			'video': null,
+			'catalogue': null,
+			'wishlist': null,
+
+			'local': gapi.hangout.getLocalParticipant(),
+			
+			'initialize': function (opts) {
+			
+				if (('collection' in opts) && (opts.collection instanceof Playlist)) {
+				
+					Backbone.View.prototype.initialize.apply(this, [{
+						'el': document.getElementsByTagName('body')[0],
+						'collection': opts.collection
+					}]);
+					
+					if (('video' in opts) && (opts.video instanceof VideoFeed)) {
+						this.video = opts.video;
+						this.video.setApp(this);
 					} else {
-						this.catalogue.collection = null;
+						throw new Error('We need a VideoFeed.');
 					}
 					
-					this.catalogue.render();
-				
-				}.bind(this));
+					if (('catalogue' in opts) && (opts.catalogue instanceof Catalogue)) {
+						this.catalogue = opts.catalogue;
+						this.catalogue.setApp(this);
+					} else {
+						throw new Error('We need a Catalogue.');
+					}
+					
+					if (('wishlist' in opts) && (opts.wishlist instanceof Wishlist)) {
+						this.wishlist = opts.wishlist;
+						this.wishlist.setApp(this);
+					} else {
+						throw new Error('We need a Wishlist.');
+					}
 
-				this.listenTo(this.catalogue, 'addedToWishlist', function (item) {
+					if (('messages' in opts) && (opts.messages instanceof MessageBus)) {
+						this.messages = opts.messages;
+						this.messages.setApp(this);
+					}
+
+					// Bind the message bus on playlist & playback events to ensure
+					// both are kept in sync with the current admin of the playlist.
+					this.listenTo(MessageBus, 'playback', function (state) {
+						if (!admin()) {
+							// NOTHING HERE YET
+						}
+					});
+					this.listenTo(MessageBus, 'playlist', function (index) {
+						if (!admin()) {
+							this.video.collection.setCurrent(index);
+							MessageBus.receive('message:' + JSON.stringify('The video has been changed!'));
+						}
+					});
+					
+					// Bind the video change to display new catalogue.
+					this.listenTo(this.collection, 'currentChanged', function (current) {
+						if (current instanceof Video) {
+							this.catalogue.collection = current.get('outfit');
+						} else {
+							this.catalogue.collection = null;
+						}
+						this.catalogue.render();
+					}.bind(this));
+
+					// Bind the event on item being added to wishlist
+					this.listenTo(this.catalogue, 'addedToWishlist', function (item) {
+					
+						this.wishlist.collection.add(item);
+						MessageBus.send(
+							'message',
+							this.local.person.displayName +
+							' has added ' + item.get('name') + ' to their wishlist.'
+						);
+					
+					}.bind(this));
 				
-					this.wishlist.collection.add(item);
-					gapi.hangout.data.sendMessage(
-						gapi.hangout.getLocalParticipant().person.displayName +
-						' has added ' + item.get('name') + ' to their wishlist.'
-					);
-				
-				}.bind(this));
+				} else { throw new Error('Need a playlist.'); }
+
+				// ADMIN STATUS HANDLING
+				// Bit of code to manage who arrives at what time to ensure the
+				// user that has arrived first receives the admin status (and once
+				// that person leaves, the second user receives the admin status and
+				// so on).
+				var admin_assignment = function (participants) {
+
+					if ('enabledParticipants' in participants) {
+						participants = participants.enabledParticipants; 
+					}
+
+					var state = gapi.hangout.data.getState(),
+						local_id = this.local.id,
+						oldest_id = _.chain(participants)
+							.pluck('id')
+							.min(function (id) { return (id in state) ? parseInt(state[id], 10) : (new Date()).getTime(); })
+							.value();
+
+					console.log('Running admin assignment...');
+					console.log('Local to oldest: ', (local_id === oldest_id), local_id, oldest_id);
+					console.dir(state);
+
+					if (local_id === oldest_id) {
+						MessageBus.sendEcho('admin', local_id);
+					}
+
+				};
+
+				gapi.hangout.data.setValue(this.local.id, (new Date()).getTime() + '');
+				gapi.hangout.onEnabledParticipantsChanged.add(admin_assignment.bind(this));
+				window.setTimeout(admin_assignment.bind(this, gapi.hangout.getEnabledParticipants()), 1000);
 			
-			} else {
-				throw new Error('Need a playlist.');
 			}
-
-			// ADMIN STATUS HANDLING
-			// Bit of code to manage who arrives at what time to ensure the
-			// user that has arrived first receives the admin status (and once
-			// that person leaves, the second user receives the admin status and
-			// so on).
-			var admin_assignment = function (participants) {
-
-				if ('enabledParticipants' in participants) {
-					participants = participants.enabledParticipants; 
-				}
-
-				var state = gapi.hangout.data.getState(),
-					local_id = gapi.hangout.getLocalParticipant().id,
-					oldest_id = _.chain(participants)
-						.pluck('id')
-						.min(function (id) { return (id in state) ? parseInt(state[id], 10) : (new Date()).getTime(); })
-						.value();
-
-				console.log('Running admin assignment...');
-				console.log('Local to oldest: ', local_id, oldest_id);
-				console.dir(state);
-
-				if (!this.admin && (local_id === oldest_id)) {
-					console.log('setAdmin TRUE');
-					this.admin = true;
-					this.trigger('setAdmin', this.admin);
-				} else if (this.admin && (local_id !== oldest_id)) {
-					console.log('setAdmin FALSE');
-					this.admin = false;
-					this.trigger('setAdmin', this.admin);
-				}
-
-			}.bind(this);
-
-			gapi.hangout.data.setValue(gapi.hangout.getLocalParticipant().id, (new Date()).getTime() + '');
-			gapi.hangout.onEnabledParticipantsChanged.add(admin_assignment);
-			admin_assignment(gapi.hangout.getEnabledParticipants());
 		
-		}
-	
-	});
-	
-	// Initialize functionality once the Hangouts API loads correctly
-	var init_func = function () {
+		});
 
-		console.log(
-			'Same account? ',
-			gapi.hangout.getLocalParticipant(),
-			gapi.hangout.getEnabledParticipants(),
-			gapi.hangout.getLocalParticipant() === gapi.hangout.getEnabledParticipants()[0]
-		);
+		App = new App({
 
-		// Initialise appropriate data sets
-		var playlist = new Playlist();
-	
-		var app = new AppView({
-		
 			'collection': playlist,
-			
 			'video': new VideoFeed({
 		
 				'collection': playlist,
@@ -985,7 +994,6 @@
 				})
 			
 			}),
-			
 			'catalogue': new Catalogue({
 			
 				'el': $('#catalogue').get(0),
@@ -993,7 +1001,6 @@
 				'template': $('#catalogue .items li').get(0)
 			
 			}),
-			
 			'wishlist': new Wishlist({
 			
 				'el': $('#wishlist').get(0),
@@ -1001,10 +1008,8 @@
 				'template': $('#wishlist .items li').get(0),
 				'shareUrl': 'http://dev.welikepie.com/fashion-hangout-app/share/'
 			
-			}),
+			})
 
-			'messages': new MessageBus()
-		
 		});
 
 		(function () {
@@ -1059,19 +1064,17 @@
 			});
 		
 		}());
-	
-	};
-	if (gapi.hangout.isApiReady()) { init_func(); }
-	else { gapi.hangout.onApiReady.add(function () { try { init_func(); } catch (e) { console.log('ERROR: ', e); } }); }
-		
-	// Strictly interface bits below
-	// (one-off, no need for Backbone.View.render)
-	$('.toggle-wishlist').on('click', function () {
-		var val = $(this).attr('data-switch');
-		$(this).attr('data-switch', this.innerHTML);
-		this.innerHTML = val;
-		
-		$('.sidebar').toggleClass('open');
+
+		// Strictly interface bits below
+		// (one-off, no need for Backbone.View.render)
+		$('.toggle-wishlist').on('click', function () {
+			var val = $(this).attr('data-switch');
+			$(this).attr('data-switch', this.innerHTML);
+			this.innerHTML = val;
+			
+			$('.sidebar').toggleClass('open');
+		});
+
 	});
 
 }());
