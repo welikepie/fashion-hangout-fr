@@ -8,7 +8,8 @@
 
 @header-colour: #000;
 @text-colour: #333;
-@background-colour: #f1f1f1;
+@background-color: #f1f1f1;
+@alt-background-color: white;
 
 @base-video-width: 680px;
 @base-video-height: floor(@base-video-width * 9 / 16);
@@ -32,10 +33,16 @@
 	box-sizing: border-box;
 }
 
+.invisible() {
+	overflow: hidden;
+	text-indent: -9999px;
+}
+
 html, body {
 	display: block;
 	width: 100%; height: 100%;
 	padding: 0; margin: 0;
+	background: @alt-background-color;
 }
 
 .main {
@@ -48,8 +55,7 @@ html, body {
 		(@base-margin * 0.5);
 	margin-right: @listing-width + (2 * @base-margin);
 
-	background: green;
-	border: @base-border solid orange;
+	border: @base-border solid @background-color;
 
 	header {
 		position: absolute;
@@ -58,7 +64,9 @@ html, body {
 		width: 100%;
 		height: @header-height - @base-border;
 
-		background: red;
+		.invisible;
+
+		background: @background-color url('../images/header.png') no-repeat 24px 20px;
 	}
 
 	#video {
@@ -68,16 +76,12 @@ html, body {
 		padding-top: @thumbnail-height + (@base-margin * 1.5);
 		margin-right: @listing-width + @base-margin;
 
-		background: purple;
-
 		#playlist {
 			position: absolute;
 			top: 0; left: 0;
 			display: block;
 			width: 100%;
 			height: @thumbnail-height;
-
-			background: pink;
 
 			.items {
 				display: block;
@@ -97,19 +101,16 @@ html, body {
 					width: @thumbnail-width;
 					height: @thumbnail-height;
 
-					cursor: pointer;
-					background: lime;
+					opacity: 0.7;
 
 					img { display: block; width: 100%; height: 100%; }
-
 					+ * { margin-left: @base-margin; }
 				}
 			}
 
 			.controls {
 
-				display: block;
-				&.active { display: block; }
+				display: none;
 
 				.prev, .next {
 					position: absolute;
@@ -117,13 +118,26 @@ html, body {
 					display: block;
 					width: @playlist-control-width;
 					height: @playlist-control-height;
-					overflow: hidden;
 
-					text-indent: -9999px;
-					background: red;
+					.invisible;
+
+					cursor: pointer;
+					background-position: center center;
+					background-repeat: no-repeat;
+
+					opacity: 0.4;
+					&:hover { opacity: 0.65; }
 				}
-				.prev { left: (@base-margin * 0.75); }
-				.next { right: (@base-margin * 0.75); }
+				.prev { left: (@base-margin * 0.75); background-image: url('../images/prev-button.png'); }
+				.next { right: (@base-margin * 0.75); background-image: url('../images/next-button.png'); }
+			}
+
+			&.active {
+				.items > * {
+					cursor: pointer;
+					&:hover { opacity: 1; }
+				}
+				.controls { display: block; }
 			}
 		}
 
@@ -131,7 +145,6 @@ html, body {
 			display: block;
 			width: 100%;
 			height: 100%;
-			background: gray;
 			
 			video {
 				display: block;
@@ -143,7 +156,6 @@ html, body {
 
 	#catalogue {
 		float: right;
-		background: brown;
 		h1 { display: none; }
 	}
 }
@@ -154,9 +166,7 @@ html, body {
 	width: @listing-width;
 	height: 100%;
 
-	padding: (@header-height + (@base-margin * 0.25)) 0 (@share-height + (@base-margin * 0.25));
-
-	background: blue;
+	padding: (@header-height + (@base-margin * 0.5)) 0 (@share-height + (@base-margin * 0.25));
 
 	h1 {
 		position: absolute;
@@ -165,7 +175,9 @@ html, body {
 		width: 100%;
 		height: @header-height;
 
-		background: yellow;
+		.invisible;
+
+		background: @background-color url('../images/collection.png') no-repeat center center;
 	}
 
 	.share {
@@ -175,7 +187,13 @@ html, body {
 		width: 100%;
 		height: @share-height;
 
-		background: black;
+		.invisible;
+
+		cursor: pointer;
+		background: black url('../images/share.png') no-repeat center center;
+		-webkit-border-radius: 4px;
+		-moz-border-radius: 4px;
+		border-radius: 4px;
 	}
 }
 
@@ -187,6 +205,10 @@ html, body {
 
 	overflow: hidden;
 
+	-webkit-box-shadow: 0 4px 8px -2px #CCC;
+	-moz-box-shadow: 0 4px 8px -2px #CCC;
+	box-shadow: 0 4px 8px -2px #CCC;
+
 	.items {
 		display: block;
 		width: 100%;
@@ -196,6 +218,9 @@ html, body {
 		overflow-x: hidden;
 		overflow-y: auto;
 		list-style: none;
+
+		background: @alt-background-color;
+		border: 1px solid @background-color;
 
 		> * {
 			position: relative;
@@ -226,9 +251,7 @@ html, body {
 
 				background: maroon;
 			}
-			p {
-				text-align: center;
-			}
+			p { text-align: center; }
 		}
 	}
 

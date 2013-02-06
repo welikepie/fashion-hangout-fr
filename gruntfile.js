@@ -142,6 +142,11 @@ module.exports = function (grunt) {
 					'build/.htaccess': '.htaccess'
 				}
 			},
+			'images': {
+				'files': {
+					'build/images/': 'images/*'
+				}
+			},
 			'data': {
 				'files': {
 					'build/data/': 'data/*'
@@ -192,9 +197,9 @@ module.exports = function (grunt) {
 	});
 	
 	grunt.registerTask('dev', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy', 'watch']);
-	grunt.registerTask('dev-deploy', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy:css', 'copy:data', 'process', 'clean:release', 'ftp-deploy']);
-	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:css', 'copy:data', 'process', 'clean:release']);
-	grunt.registerTask('release-deploy', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:css', 'copy:data', 'process', 'clean:release', 'ftp-deploy']);
+	grunt.registerTask('dev-deploy', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy:css', 'copy:images', 'copy:data', 'process', 'clean:release', 'ftp-deploy']);
+	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:css', 'copy:images', 'copy:data', 'process', 'clean:release']);
+	grunt.registerTask('release-deploy', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:css', 'copy:images', 'copy:data', 'process', 'clean:release', 'ftp-deploy']);
 	grunt.registerTask('default', 'dev');
 	
 	/* ************************************************ */
