@@ -30,7 +30,7 @@
 	// A singleton for coordinating the communication
 	// with other instances of the fashion hangout app - especially
 	// the issue of syncing the admin status and playback.
-	MessageBus = (function (undefined) {
+	MessageBus = (function () {
 
 		var Root = function () {
 
@@ -835,7 +835,7 @@
 		'render': _.debounce(function () {
 			var el, fade_func = function () { $(this).remove(); };
 			while (this.messages.length) {
-				el = this.template(this.messages.shift());
+				el = $(this.template(this.messages.shift())).on('click', fade_func).get(0);
 				window.setTimeout(fade_func.bind(el), 3000);
 				this.$el.append(el);
 			}
@@ -847,7 +847,7 @@
 		var playlist = new Playlist(),
 			messages = new MessageDisplay({
 				'el': $('#messages').get(0),
-				'template': $('#messages .alert').get(0)
+				'template': $('#messages div').get(0)
 			});
 
 		// Have message display show stuff from message bus
@@ -956,10 +956,6 @@
 							.min(function (id) { return (id in state) ? parseInt(state[id], 10) : (new Date()).getTime(); })
 							.value();
 
-					console.log('Running admin assignment...');
-					console.log('Local to oldest: ', (local_id === oldest_id), local_id, oldest_id);
-					console.dir(state);
-
 					if (local_id === oldest_id) {
 						MessageBus.sendEcho('admin', local_id);
 					}
@@ -980,16 +976,16 @@
 			'video': new VideoFeed({
 		
 				'collection': playlist,
-				'el': $('#playback').get(0),
-				'feed': $('#playback .video').get(0),
+				'el': $('#video').get(0),
+				'feed': $('#video #feed').get(0),
 				
 				'playlist': new PlaylistView({
 				
 					'collection': playlist,
-					'el': $('#playback .playlist').get(0),
-					'container': $('#playback .playlist .items').get(0),
-					'template': $('#playback .playlist .items li').get(0),
-					'controls': $('#playback .controls').get(0)
+					'el': $('#video .playlist').get(0),
+					'container': $('#video .playlist .items').get(0),
+					'template': $('#video .playlist .items > *').get(0),
+					'controls': $('#video .playlist .controls').get(0)
 				
 				})
 			
@@ -1003,9 +999,9 @@
 			}),
 			'wishlist': new Wishlist({
 			
-				'el': $('#wishlist').get(0),
-				'container': $('#wishlist .items').get(0),
-				'template': $('#wishlist .items li').get(0),
+				'el': $('.side').get(0),
+				'container': $('.side #collection .items').get(0),
+				'template': $('.side #collection .items li').get(0),
 				'shareUrl': 'http://dev.welikepie.com/fashion-hangout-app/share/'
 			
 			})
@@ -1064,16 +1060,6 @@
 			});
 		
 		}());
-
-		// Strictly interface bits below
-		// (one-off, no need for Backbone.View.render)
-		$('.toggle-wishlist').on('click', function () {
-			var val = $(this).attr('data-switch');
-			$(this).attr('data-switch', this.innerHTML);
-			this.innerHTML = val;
-			
-			$('.sidebar').toggleClass('open');
-		});
 
 	});
 

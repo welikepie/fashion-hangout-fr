@@ -1,6 +1,6 @@
 <?php
 
-	define('CLOTHING_JSON', 'https://raw.github.com/welikepie/fashion-hangout-app/v1/data/clothing.jsonp');
+	define('CLOTHING_JSON', 'https://dev.welikepie.com:444/fashion-hangout-app/data/clothing.jsonp');
 	define('JSONP_OFFSET_START', 7);
 	define('JSONP_OFFSET_END', 2);
 	
@@ -38,19 +38,20 @@
 ?><!DOCTYPE html>
 <html itemscope itemtype="http://schema.org/ImageObject">
 	<head>
-		<title itemprop="name">Fashion Share</title>
+		<title itemprop="name">#Be The Buyer</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		
 		<meta itemprop="representativeOfPage" content="true">
-		<meta itemprop="description" content="Short blurb for the share page.">
+		<meta itemprop="description" content="See what I love from Topshop Uniques AW13 show with their Be The Buyer app.">
 		
 		<link rel="stylesheet" href="styles.css" type="text/css">
-		<link rel="canonical" href="http://dev.welikepie.com/fashion-share/?<?php echo($_SERVER['QUERY_STRING']); ?>" itemprop="url">
+		<link rel="canonical" href="http://dev.welikepie.com/fashion-hangout-app/share/?<?php echo($_SERVER['QUERY_STRING']); ?>" itemprop="url">
 	</head>
 	<body>
 		<header>
-			<h1>Fashion Share</h1>
-			<h2>Subtitle</h2>
+			<h1>Topshop</h1>
+			<h2>Unique AW13 : Be The Buyer</h2>
+			<p>Watch the clips below and when you see an item you love, drag it into your collection on the right. Share it with your friends using #BeTheBuyer for your chance to win a shopping spree!</p>
 		</header>
 		<section id="collection">
 		
@@ -65,10 +66,9 @@
 		
 		</section>
 		<footer>
-			<div class="subscribe">
-				<button type="button">Subscribe to receive updates about your collection</button>
-			</div>
-			<p>Example text in footer.</p>
+			<p>Take part in Be The Buyer for your chance to win a shopping spree!</p>
+			<a href="https://plus.google.com/hangouts/_?gid=933972638530" target="_blank" class="app">Launch the App</a>
+			<a href="http://www.topshop.com/" target="_blank" class="shop">Shop Topshop.com</a>
 		</footer>
 	</body>
 </html>
