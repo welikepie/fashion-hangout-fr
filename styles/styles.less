@@ -73,6 +73,31 @@ html, body {
 		background: @background-color url('../images/header.png') no-repeat 24px 20px;
 	}
 
+	.messages {
+		position: absolute;
+		top: @header-height - @base-border; left: 0;
+		z-index: 100;
+		display: block;
+		width: 100%;
+
+		> * {
+			display: block;
+			float: left;
+			width: 100%;
+			padding: 8px 16px;
+
+			font-size: 14px;
+
+			cursor: pointer;
+			background: @alt-background-color;
+			border-bottom: 1px solid @background-color;
+
+			-webkit-box-shadow: 0 4px 8px -2px #CCC;
+			-moz-box-shadow: 0 4px 8px -2px #CCC;
+			box-shadow: 0 4px 8px -2px #CCC;
+		}
+	}
+
 	#video {
 		position: relative;
 		display: block;
