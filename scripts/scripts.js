@@ -590,16 +590,18 @@
 			/* uncomment later if (index > max_index) { index = max_index; } */
 			
 			// Obtain existing index
-			old_offset = this.$container.css('left').match(/^(-?[0-9]+)px$/i);
+			old_offset = this.$container.css('text-indent').match(/^-?([0-9]+)(?:px)?$/i);
 			if (old_offset) { old_offset = parseInt(old_offset[1], 10); } else { old_offset = 0; }
 			new_offset = items.eq(index).position().left;
+
+			console.log('Index tested: ', index, ' | Position: ', new_offset, ' | Old: ', old_offset);
 			
 			/* uncomment later if ((contents_width - new_offset) < container_width) {
 				new_offset = contents_width - container_width;
 			}*/
 			
 			if (old_offset !== new_offset) {
-				this.$container.css('left', (new_offset * -1) + 'px');
+				this.$container.css('text-indent', (new_offset * -1) + 'px');
 			}
 			
 			current_index = index;
@@ -982,10 +984,10 @@
 				'playlist': new PlaylistView({
 				
 					'collection': playlist,
-					'el': $('#video .playlist').get(0),
-					'container': $('#video .playlist .items').get(0),
-					'template': $('#video .playlist .items > *').get(0),
-					'controls': $('#video .playlist .controls').get(0)
+					'el': $('#video #playlist').get(0),
+					'container': $('#video #playlist .items').get(0),
+					'template': $('#video #playlist .items > *').get(0),
+					'controls': $('#video #playlist .controls').get(0)
 				
 				})
 			

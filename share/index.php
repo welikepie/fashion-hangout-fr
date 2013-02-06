@@ -1,6 +1,6 @@
 <?php
 
-	define('CLOTHING_JSON', 'https://dev.welikepie.com:444/fashion-hangout-app/data/clothing.jsonp');
+	define('CLOTHING_JSON', 'http://dev.welikepie.com/fashion-hangout-app/data/clothing.jsonp');
 	define('JSONP_OFFSET_START', 7);
 	define('JSONP_OFFSET_END', 2);
 	

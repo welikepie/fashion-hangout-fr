@@ -126,6 +126,9 @@ module.exports = function (grunt) {
 								/<!--<base(?:[^>]*)>-->/i,
 								"<base href=\"https://dev.welikepie.com:444/fashion-hangout-app/\">"
 							);
+					},
+					'postprocess': function (content) {
+						return content.replace(/\.\.\/images/gi, 'https://dev.welikepie.com:444/fashion-hangout-app/images');
 					}
 				},
 				'files': {'build/index.htm': 'index.htm'}
