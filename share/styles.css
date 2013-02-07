@@ -39,6 +39,7 @@ header {
 	width: 168px;
 	margin: 16px;
 	overflow: hidden;
+	vertical-align: top;
 }
 .items li img {
 	display: block;

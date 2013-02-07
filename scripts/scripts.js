@@ -1,14 +1,16 @@
-/*global $:true, _:true, Backbone:true, gapi:true */
-(function () {
+/*global $:true, _:true, Backbone:true, gapi:true, Modernizr:true, flowplayer:true, _gaq:true */
+window.init = function () {
 	"use strict";
 
 	_.templateSettings = {
-		'interpolate' : /(?:&lt;|<)!--!(.+?)!--(?:>|&gt;)/g,
-		'evaluate' : /(?:&lt;|<)!--%(.+?)%--(?:>|&gt;)/g
+		'interpolate' : /(?:&lt;|%3C|<)(?:%21|!)--(?:%21|!)(.+?)(?:%21|!)--(?:>|%3E|&gt;)/g,
+		'evaluate' : /(?:&lt;|%3C|<)(?:%21|!)--%(.+?)%--(?:>|%3E|&gt;)/g
 	};
 
 		// Utility Belt
-	var MessageBus,
+	var BASE_URL = $('base').attr('href') || '',
+
+		MessageBus,
 		AppView,
 		CollectionView,
 		admin,
@@ -68,7 +70,6 @@
 		Root.prototype.sendRaw = gapi.hangout.data.sendMessage.bind(gapi.hangout.data);
 
 		Root.prototype.receive = function (message) {
-			console.log('Receiving message: ', message);
 			var match = message.match(/^([a-zA-Z0-9_-]+):(.+)$/);
 			if (match) {
 				match = [
@@ -458,8 +459,144 @@
 		'comparator': 'id'
 	
 	});
+	
+	VideoFeed = AppView.extend((function () {
+	
+		var init_func,
+			root = {
+				'feed': null,
+				'playlist': null,
+				'initialize': function (opts) {
+				
+					AppView.prototype.initialize.apply(this, [_.pick(opts, 'collection', 'el', 'app')]);
+					
+					if (('playlist' in opts) && (opts.playlist instanceof PlaylistView)) {
+						this.playlist = opts.playlist;
+						if (this.playlist.collection !== this.collection) {
+							this.playlist.collection = this.collection;
+							this.playlist.render();
+						}
+					} else {
+						this.playlist = new PlaylistView({
+							'collection': this.collection,
+							'el': $(document.createElement('div')).appendTo(this.el).get(0)
+						});
+					}
+					
+					this.listenTo(this.collection, 'currentChanged', function (currentVideo) {
+						this.render();
+						if (admin()) { MessageBus.send('playlist', this.collection.indexOf(currentVideo)); }
+					});
+					
+					init_func.apply(this, arguments);
+				
+				}
+			};
+		
+		if (Modernizr.video) {
+		
+			init_func = function (opts) {
 
-	VideoFeed = AppView.extend({
+				var temp, template_func;
+			
+				if ('feed' in opts) {
+		
+					if (typeof opts.feed === 'object') {
+						this.feed = opts.feed;
+						temp = document.createElement('div');
+						$(opts.feed).clone().remove().appendTo(temp);
+						temp = temp.innerHTML;
+					} else {
+						temp = opts.feed;
+					}
+					
+					template_func = _.template(temp);
+					this.template = function (data) {
+						var temp = document.createElement('div');
+						temp.innerHTML = template_func(data);
+						return temp.removeChild(temp.childNodes[0]);
+					};
+				
+				} else { throw new Error('We need a feed!'); }
+			
+			};
+			
+			root.play = function () { $('video', this.feed).get(0).play(); };
+			root.pause = function () { $('video', this.feed).get(0).pause(); };
+		
+			root.render = _.debounce(function () {
+		
+				var current = this.collection.getCurrent(),
+					new_feed;
+				
+				if (current) {
+					new_feed = this.template(current.toJSON());
+				} else {
+					new_feed = this.template({
+						'name': ' ',
+						'description': 'Click on any of the videos below to start the playback!',
+						'poster': '',
+						'sources': {}
+					});
+				}
+
+				$('video', new_feed)
+					.on('ended', this.collection.nextVideo.bind(this.collection))
+					.on('play', function () { if (admin()) { MessageBus.send('playback', 'play'); } })
+					.on('pause', function () { if (admin()) { MessageBus.send('playback', 'pause'); } });
+				
+				if (this.feed) {
+					$(this.feed).replaceWith(new_feed);
+				} else {
+					this.$el.prepend(new_feed);
+				}
+				this.feed = new_feed;
+			
+			}, 10);
+		
+		} else {
+		
+			init_func = function (opts) {
+			
+				if (typeof opts.feed === 'object') {
+					this.feed = opts.feed;
+				} else {
+					this.feed = $(opts.feed).appendTo(this.el).empty().get(0);
+				}
+				
+				this.player = flowplayer(this.feed, 'scripts/other/flowplayer-3.2.15.swf', {
+					'clip': { // Clip is an object, hence '{...}'
+						'autoPlay': true,
+						'autoBuffering': true,
+						'scaling': 'fit',
+
+						'onFinish': this.collection.nextVideo.bind(this.collection),
+						'onResume': function () { if (admin()) { MessageBus.send('playback', 'play'); } },
+						'onPause': function () { if (admin()) { MessageBus.send('playback', 'pause'); } }
+					}
+				});
+			
+			};
+			
+			root.play = function () { this.player.resume(); };
+			root.pause = function () { this.player.pause(); };
+			
+			root.render = _.debounce(function () {
+		
+				var current = this.collection.getCurrent(),
+					video_url = current ? current.get('sources')['video/mp4'] || '' : '';
+				
+				this.player.play(video_url);
+			
+			}, 10);
+		
+		}
+		
+		return root;
+	
+	}()));
+
+	/*VideoFeed = AppView.extend({
 	
 		'feed': null,
 		'template': null,
@@ -546,62 +683,39 @@
 		
 		}, 10)
 	
-	});
+	});*/
 
 	PlaylistView = CollectionView.extend((function () {
 	
 		var setup = {},
-		
-			contents_width = 0,
-			container_width = 0,
-			adjust_width,
-			
+			thumbnail_offset,
 			current_index = 0,
 			max_index = 0,
 			adjust_position;
-		
-		adjust_width = _.debounce(function () {
-		
-			var items = this.$container.children(),
-				width = 0,
-				i;
-			
-			items.each(function () { width += $(this).width() + 16; });
-			contents_width = width;
-			
-			for (i = width = 0; i < items.length; i += 1) {
-				width += items.eq(i).width() + 16;
-				if (contents_width - width < container_width) {
-					max_index = i + 1;
-					break;
-				}
-			}
-		
-		}, 250);
 		
 		adjust_position = _.debounce(function (index) {
 		
 			var items = this.$container.children(),
 				new_offset, old_offset;
+
+			// Obtain thumbnail offset for the first
+			if (typeof thumbnail_offset === 'undefined') { thumbnail_offset = items.eq(1).position().left || 0; }
 			
 			// Adjust index
 			if (index < 0) { index = 0; }
 			if (index >= items.length) { index = items.length - 1; }
 			/* uncomment later if (index > max_index) { index = max_index; } */
-			
-			// Obtain existing index
-			old_offset = this.$container.css('text-indent').match(/^-?([0-9]+)(?:px)?$/i);
-			if (old_offset) { old_offset = parseInt(old_offset[1], 10); } else { old_offset = 0; }
-			new_offset = items.eq(index).position().left;
 
-			console.log('Index tested: ', index, ' | Position: ', new_offset, ' | Old: ', old_offset);
+			new_offset = index * -thumbnail_offset;
+			old_offset = this.$container.css('text-indent').match(/^(-?[0-9]+)(?:px)?$/i);
+			if (old_offset) { old_offset = parseInt(old_offset[1], 10); } else { old_offset = 0; }
 			
 			/* uncomment later if ((contents_width - new_offset) < container_width) {
 				new_offset = contents_width - container_width;
 			}*/
 			
 			if (old_offset !== new_offset) {
-				this.$container.css('text-indent', (new_offset * -1) + 'px');
+				this.$container.css('text-indent', new_offset + 'px');
 			}
 			
 			current_index = index;
@@ -624,8 +738,6 @@
 				}
 				
 				adjust_position = adjust_position.bind(this);
-				adjust_width = adjust_width.bind(this);
-				container_width = this.$container.width();
 				
 				this.listenTo(this.collection, 'currentChanged', this.render);
 				this.controls.prev.on('click', admin(this.scrollPrev).bind(this));
@@ -633,8 +745,6 @@
 				this.render();
 
 				this.listenTo(MessageBus, 'admin', function (id) {
-					console.log('Admin callback: ', admin(id));
-					console.dir(admin); console.dir(id); console.dir(admin(id));
 					this.$el[admin(id) ? 'addClass' : 'removeClass']('active');
 				});
 			
@@ -664,8 +774,7 @@
 
 					var el = $(this.template(model.toJSON()));
 
-					el.on('click', admin(this.collection.setCurrent).bind(this.collection, model))
-						.find('img').on('load', adjust_width);
+					el.on('click', admin(this.collection.setCurrent).bind(this.collection, model));
 
 					return el.get(0);
 				
@@ -680,6 +789,8 @@
 	}()));
 
 	Catalogue = CollectionView.extend({
+
+		'overCollection': false,
 	
 		'initialize': function () {
 		
@@ -696,10 +807,31 @@
 			this.$container
 				.empty()
 				.append(this.collection.map(function (model) {
-				
-					var el = this.template(model.toJSON());
-					$('a', el).on('click', this.trigger.bind(this, 'addedToWishlist', model));
-					return el;
+					
+					var el = $(this.template(model.toJSON()))
+						.on('click', this.trigger.bind(this, 'addedToWishlist', model));
+
+					if (Modernizr.draganddrop) {
+
+						el
+							.on('dragstart', function (ev) {
+								if (ev.dataTransfer) {
+									ev.dataTransfer.effectAllowed = 'copy';
+									ev.dataTransfer.setData("application/x-bookmark", model.id);
+								}
+								if (ev.originalEvent.dataTransfer) {
+									ev.originalEvent.dataTransfer.effectAllowed = 'copy';
+									ev.originalEvent.dataTransfer.setData("application/x-bookmark", model.id);
+								}
+							})
+							.on('dragend', function (ev) {
+								if (this.overCollection) { this.trigger('addedToWishlist', model); }
+								this.overCollection = false;
+							}.bind(this));
+
+					}
+
+					return el.get(0);
 				
 				}.bind(this)));
 			
@@ -735,6 +867,9 @@
 						.on('click', function () {
 						
 							if (this.collection.length) {
+
+								_gaq.push(['_trackEvent', 'Interaction', 'Collection Shared']);
+
 								window.open(
 									'https://plus.google.com/share?url=' + encodeURIComponent(this.shareButton.fullUrl),
 									'',
@@ -789,7 +924,6 @@
 				
 				template_func = _.template(temp);
 				this.template = function (data) {
-					console.log('Template with: ', data);
 					var temp = document.createElement('div');
 					temp.innerHTML = template_func(data);
 					return temp.removeChild(temp.childNodes[0]);
@@ -844,7 +978,7 @@
 		}, 500)
 	});
 
-	gapi.hangout.onApiReady.add(function () {
+	gapi.hangout.onApiReady.add(function () { try {
 
 		var playlist = new Playlist(),
 			messages = new MessageDisplay({
@@ -905,9 +1039,7 @@
 					// Bind the message bus on playlist & playback events to ensure
 					// both are kept in sync with the current admin of the playlist.
 					this.listenTo(MessageBus, 'playback', function (state) {
-						if (!admin()) {
-							// NOTHING HERE YET
-						}
+						if (!admin()) { this.video[state](); }
 					});
 					this.listenTo(MessageBus, 'playlist', function (index) {
 						if (!admin()) {
@@ -928,13 +1060,19 @@
 
 					// Bind the event on item being added to wishlist
 					this.listenTo(this.catalogue, 'addedToWishlist', function (item) {
-					
+						
+						_gaq.push(['_setCustomVar', 1, 'Clothing Item', '' + item.get('id')]);
+						_gaq.push(['_trackEvent', 'Interaction', 'Item Added']);
+
 						this.wishlist.collection.add(item);
-						MessageBus.send(
-							'message',
-							this.local.person.displayName +
-							' has added ' + item.get('name') + ' to their wishlist.'
-						);
+
+						if (item.get('name')) {
+							MessageBus.send(
+								'message',
+								this.local.person.displayName +
+								' has added ' + item.get('name') + ' to their wishlist.'
+							);
+						}
 					
 					}.bind(this));
 				
@@ -1046,6 +1184,8 @@
 				'url': 'data/videos.jsonp',
 				'type': 'GET',
 				'dataType': 'jsonp',
+				'jsonpCallback': 'jsonp1',
+				'crossDomain': true,
 				'success': function (data) {
 					video_data = data;
 					process_func();
@@ -1055,6 +1195,8 @@
 				'url': 'data/clothing.jsonp',
 				'type': 'GET',
 				'dataType': 'jsonp',
+				'jsonpCallback': 'jsonp2',
+				'crossDomain': true,
 				'success': function (data) {
 					clothing_data = data;
 					process_func();
@@ -1063,6 +1205,31 @@
 		
 		}());
 
-	});
+		// Drag-n-drop
+		if (Modernizr.draganddrop) {
 
-}());
+			$('#collection .items')
+				.on('dragover', function (ev) {
+					ev.preventDefault();
+					return false;
+				})
+				.on('dragenter', function (ev) {
+					ev.preventDefault();
+					ev.stopPropagation();
+					if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'copy'; }
+					if (ev.originalEvent.dataTransfer) { ev.originalEvent.dataTransfer.dropEffect = 'copy'; }
+					App.catalogue.overCollection = true;
+					return false;
+				})
+				.on('dragleave', _.debounce(function (ev) {
+					ev.preventDefault();
+					ev.stopPropagation();
+					App.catalogue.overCollection = false;
+					return false;
+				}, 100));
+
+		}
+
+	} catch (e) { console.dir(e); } });
+
+};
