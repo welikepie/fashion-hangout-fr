@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Module>
-	<ModulePrefs title="Fashion Hangout App">
+	<ModulePrefs title="Topshop - Be The Buyer">
 		<Require feature="rpc" />
 		<Require feature="views" />
 		<Require feature="locked-domain" />

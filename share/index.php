@@ -1,6 +1,6 @@
 <?php
 
-	define('CLOTHING_JSON', 'http://dev.welikepie.com/fashion-hangout-app/data/clothing.jsonp');
+	define('CLOTHING_JSON', 'http://bethebuyer.topshop.com/data/clothing.jsonp');
 	define('JSONP_OFFSET_START', 7);
 	define('JSONP_OFFSET_END', 2);
 	
@@ -45,12 +45,13 @@
 		<meta itemprop="description" content="See what I love from Topshop Uniques AW13 show with their Be The Buyer app.">
 		
 		<link rel="stylesheet" href="styles.css" type="text/css">
-		<link rel="canonical" href="http://dev.welikepie.com/fashion-hangout-app/share/?<?php echo($_SERVER['QUERY_STRING']); ?>" itemprop="url">
+		<link rel="canonical" href="http://bethebuyer.topshop.com/share/?<?php echo($_SERVER['QUERY_STRING']); ?>" itemprop="url">
 		
 		<script type="text/javascript">
 
 		  var _gaq = _gaq || [];
 		  _gaq.push(['_setAccount', 'UA-37546944-3']);
+		  _gaq.push(['_setDomainName', 'none']);
 		  _gaq.push(['_trackPageview']);
 
 		  (function() {

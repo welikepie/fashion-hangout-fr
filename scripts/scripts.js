@@ -8,9 +8,7 @@ window.init = function () {
 	};
 
 		// Utility Belt
-	var BASE_URL = $('base').attr('href') || '',
-
-		MessageBus,
+	var MessageBus,
 		AppView,
 		CollectionView,
 		admin,
@@ -108,7 +106,7 @@ window.init = function () {
 			Backbone.View.prototype.initialize.apply(this, arguments);
 			if ('app' in opts) { this.setApp(opts.app); }
 		},
-		'appInitialize': function (app) {}
+		'appInitialize': function () {}
 	});
 
 	CollectionView = AppView.extend({
@@ -541,7 +539,7 @@ window.init = function () {
 				}
 
 				$('video', new_feed)
-					.on('ended', this.collection.nextVideo.bind(this.collection))
+					.on('ended', function () { if (admin()) { this.collection.nextVideo(); } }.bind(this))
 					.on('play', function () { if (admin()) { MessageBus.send('playback', 'play'); } })
 					.on('pause', function () { if (admin()) { MessageBus.send('playback', 'pause'); } });
 				
@@ -552,7 +550,7 @@ window.init = function () {
 				}
 				this.feed = new_feed;
 			
-			}, 10);
+			}, 100);
 		
 		} else {
 		
@@ -588,7 +586,7 @@ window.init = function () {
 				
 				this.player.play(video_url);
 			
-			}, 10);
+			}, 100);
 		
 		}
 		
@@ -690,7 +688,7 @@ window.init = function () {
 		var setup = {},
 			thumbnail_offset,
 			current_index = 0,
-			max_index = 0,
+			//max_index = 0,
 			adjust_position;
 		
 		adjust_position = _.debounce(function (index) {
@@ -824,7 +822,7 @@ window.init = function () {
 									ev.originalEvent.dataTransfer.setData("application/x-bookmark", model.id);
 								}
 							})
-							.on('dragend', function (ev) {
+							.on('dragend', function () {
 								if (this.overCollection) { this.trigger('addedToWishlist', model); }
 								this.overCollection = false;
 							}.bind(this));
@@ -978,7 +976,7 @@ window.init = function () {
 		}, 500)
 	});
 
-	gapi.hangout.onApiReady.add(function () { try {
+	gapi.hangout.onApiReady.add(function () { /*try {*/
 
 		var playlist = new Playlist(),
 			messages = new MessageDisplay({
@@ -1063,6 +1061,7 @@ window.init = function () {
 						
 						_gaq.push(['_setCustomVar', 1, 'Clothing Item', '' + item.get('id')]);
 						_gaq.push(['_trackEvent', 'Interaction', 'Item Added']);
+						_gaq.push(['_deleteCustomVar', 1]);
 
 						this.wishlist.collection.add(item);
 
@@ -1142,7 +1141,7 @@ window.init = function () {
 				'el': $('.side').get(0),
 				'container': $('.side #collection .items').get(0),
 				'template': $('.side #collection .items li').get(0),
-				'shareUrl': 'http://dev.welikepie.com/fashion-hangout-app/share/'
+				'shareUrl': 'http://bethebuyer.topshop.com/share/'
 			
 			})
 
@@ -1177,6 +1176,9 @@ window.init = function () {
 					_.invoke(results, 'unset', 'outfit_id');
 					
 					playlist.reset(results);
+					// Sync current video
+					var state = gapi.hangout.data.getState();
+					if ('playlist' in state) { playlist.setCurrent(parseInt(state.playlist, 10)); }
 				
 				});
 			
@@ -1230,6 +1232,6 @@ window.init = function () {
 
 		}
 
-	} catch (e) { console.dir(e); } });
+	/*} catch (e) { console.dir(e); }*/ });
 
 };

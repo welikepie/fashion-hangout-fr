@@ -6,7 +6,7 @@ module.exports = function (grunt) {
 	
 		'clean': {
 			'init': ['build'],
-			'release': ['build/index.htm', 'build/styles']
+			'release': ['build/index.htm', 'build/styles', 'build/.htaccess']
 		},
 		
 		'recess': {
@@ -123,12 +123,12 @@ module.exports = function (grunt) {
 								/<link(?:[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*|[^>]*href="([^"]+)"[^>]*rel="stylesheet"[^>]*)>/gi,
 								"<style type=\"text/css\"><%= grunt.file.read('build/$1') %></style>"
 							).replace(
-								/<!--<base(?:[^>]*)>-->/i,
-								"<base href=\"https://dev.welikepie.com:444/fashion-hangout-app/\">"
+								/<!--<base[^>]*>-->/i,
+								"<base href=\"https://bethebuyer.topshop.com:446/\">"
 							);
 					},
 					'postprocess': function (content) {
-						return content.replace(/\.\.\/images/gi, 'https://dev.welikepie.com:444/fashion-hangout-app/images');
+						return content.replace(/\.\.\/images/gi, 'https://bethebuyer.topshop.com:446/images');
 					}
 				},
 				'files': {'build/index.htm': 'index.htm'}
@@ -148,7 +148,10 @@ module.exports = function (grunt) {
 			'scripts': { 'files': { 'build/scripts/other/': 'scripts/other/*' } },
 			'images': { 'files': { 'build/images/': 'images/*' } },
 			'data': { 'files': { 'build/data/': 'data/*' } },
-			'css': { 'files': { 'build/styles/': 'styles/*.css' } }
+			'css': { 'files': { 'build/styles/': 'styles/*.css' } },
+			'branding': { 'files': { 'build/branding/': 'branding/*' } },
+			'backend': { 'files': { 'build/backend/': 'backend/*' } },
+			'share': { 'files': { 'build/share/': 'share/*' } }
 		},
 		
 		'watch': {
@@ -182,16 +185,16 @@ module.exports = function (grunt) {
 					'authKey': 'user'
 				},
 				'src': 'build',
-				'dest': '/Development/fashion-hangout-app'
+				'dest': '/BeTheBuyer'
 			}
 		}
 	
 	});
 	
 	grunt.registerTask('dev', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy', 'watch']);
-	grunt.registerTask('dev-deploy', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy:scripts', 'copy:css', 'copy:images', 'copy:data', 'process', 'clean:release', 'ftp-deploy']);
-	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:scripts', 'copy:css', 'copy:images', 'copy:data', 'process', 'clean:release']);
-	grunt.registerTask('release-deploy', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy:scripts', 'copy:css', 'copy:images', 'copy:data', 'process', 'clean:release', 'ftp-deploy']);
+	grunt.registerTask('dev-deploy', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy:scripts', 'copy:images', 'copy:css', 'process', 'clean:release', 'ftp-deploy']);
+	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy', 'process', 'clean:release']);
+	grunt.registerTask('release-deploy', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy', 'process', 'clean:release', 'ftp-deploy']);
 	grunt.registerTask('default', 'dev');
 	
 	/* ************************************************ */
