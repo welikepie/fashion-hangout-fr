@@ -66,7 +66,7 @@
 		<header>
 			<h1>Topshop</h1>
 			<h2>Unique AW13 : Be The Buyer</h2>
-			<p>Watch the clips below and when you see an item you love, drag it into your collection on the right. Share it with your friends using #BeTheBuyer for your chance to win a shopping spree!</p>
+			<p>See what I love from Topshop Unique’s AW13 show with their Be The Buyer app.</p>
 		</header>
 		<section id="collection">
 		
@@ -83,7 +83,7 @@
 		<footer>
 			<p>Take part in Be The Buyer for your chance to win a shopping spree!</p>
 			<a href="https://plus.google.com/hangouts/_?gid=933972638530" target="_blank" class="app">Launch the App</a>
-			<a href="http://www.topshop.com/" target="_blank" class="shop">Shop Topshop.com</a>
+			<a href="../branding/tos_policy.htm" target="_blank" class="terms">Terms &amp; Conditions</a>
 		</footer>
 	</body>
 </html>

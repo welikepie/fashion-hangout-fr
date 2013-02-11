@@ -2,7 +2,7 @@ jsonp2([
 	{
 		"id": 1,
 		
-		"name": "CASUAL DRAPE TOP",
+		"name": "",
 		"description": "3/4 sleeve casual drape detail top with turn-up sleeve feature. 100% Viscose. Machine washable.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/13M08DBLK_normal.jpg",
 		
@@ -11,7 +11,7 @@ jsonp2([
 	{
 		"id": 2,
 		
-		"name": "MOTO INDIGO STUD DENIM SHIRT",
+		"name": "",
 		"description": "MOTO Indigo wash denim shirt with stud detail to front and back yoke. 100% Cotton. Machine washable.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/05H07DIND_normal.jpg",
 		
@@ -20,7 +20,7 @@ jsonp2([
 	{
 		"id": 3,
 		
-		"name": "SLEEVELESS STUD CHECK SHIRT",
+		"name": "",
 		"description": "Sleeveless check shirt with front poppers and stud detail pockets. 100% Cotton. Machine washable.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/13S01DPNK_normal.jpg",
 		
@@ -29,7 +29,7 @@ jsonp2([
 	{
 		"id": 4,
 		
-		"name": "DENIM LOOK TUBE SKIRT",
+		"name": "",
 		"description": "Denim look tube skirt 68% Cotton,23% Polyester,9% Elastane. Machine washable.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/27Y06DIND_normal.jpg",
 		
@@ -38,7 +38,7 @@ jsonp2([
 	{
 		"id": 5,
 		
-		"name": "40'S CAR COAT BY BOUTIQUE",
+		"name": "",
 		"description": "Black 40's car coat, By Boutique. Made In Britain. 52% Polyester,43% Wool,5% Elastane. Dry clean only.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/25B03DBRG_normal.jpg",
 		
@@ -47,7 +47,7 @@ jsonp2([
 	{
 		"id": 6,
 		
-		"name": "SELF STRIPE TROUSERS BY BOUTIQUE",
+		"name": "",
 		"description": "Black self stripe cigarette trousers, By Boutique. Made In Britain 62% Polyester,38% Cotton. Dry clean only.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/25D50CBLK_normal.jpg",
 		
@@ -56,7 +56,7 @@ jsonp2([
 	{
 		"id": 7,
 		
-		"name": "CAT EAR HAT",
+		"name": "",
 		"description": "Black bowler-style hat with cat ears. 57% Polyester,28% Acrylic,15% Nylon. Do not wash.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/19K05DBLK_normal.jpg",
 		
@@ -65,7 +65,7 @@ jsonp2([
 	{
 		"id": 8,
 		
-		"name": "MIRROR HARNESS BOOTS",
+		"name": "",
 		"description": "Black pointed ankle boots with black glitter detail and metal harness. 100% Leather. Do not wash.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/42Y23CBLK_normal.jpg",
 		
@@ -74,7 +74,7 @@ jsonp2([
 	{
 		"id": 9,
 		
-		"name": "REVERSIBLE READY TO MINGLE RING",
+		"name": "",
 		"description": "Gold look reversible ring with 'single' on one side and 'ready to mingle' on the other, by Freedom at Topshop Metal.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/61G20DGLD_normal.jpg",
 		
@@ -83,7 +83,7 @@ jsonp2([
 	{
 		"id": 10,
 		
-		"name": "CAMO PRINT UMBRELLA",
+		"name": "",
 		"description": "Khaki all over camo print umbrella with matt black ball handle. 100% Polyester. Wipe Clean.",
 		"photo": "http://media.topshop.com/wcsstore/TopShop/images/catalog/19U03DKHA_normal.jpg",
 		
