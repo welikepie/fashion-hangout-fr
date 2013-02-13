@@ -58,6 +58,8 @@ html, body {
 		@base-margin
 		(@base-margin * 0.5);
 	margin-right: @listing-width + (2 * @base-margin);
+	@media (min-width: 720px) and (max-width: 900px) { padding-top: @header-height + (@base-margin * 2); }
+	@media (max-width: 719px) { padding-top: @header-height + (@base-margin * 4); }
 
 	border: @base-border solid @background-color;
 
@@ -67,15 +69,43 @@ html, body {
 		display: block;
 		width: 100%;
 		height: @header-height - @base-border;
+		@media (min-width: 720px) and (max-width: 900px) { height: @header-height + (@base-margin * 2) - @base-border; }
+		@media (max-width: 719px) { height: @header-height + (@base-margin * 4) - @base-border; }
 
-		.invisible;
+		background: @background-color;
 
-		background: @background-color url('../images/header.png') no-repeat 24px 20px;
+		h1 {
+			float: left;
+			width: 246px;
+			height: 100%;
+
+			.invisible;
+			background: url('../images/header.png') no-repeat center 28px;
+		}
+		h2 {
+			margin: 16px 0 0 246px;
+			font-size: 15px;
+			font-weight: bold;
+			line-height: 20px;
+			text-transform: uppercase;
+		}
+		p {
+			max-width: 570px;
+			margin: 0 32px 16px 246px;
+			font-size: 11px;
+		}
+		h2, p { margin-left: 246px; }
+
+		/*.invisible;
+
+		background: @background-color url('../images/header.png') no-repeat 24px 20px;*/
 	}
 
 	#messages {
 		position: absolute;
 		top: @header-height - @base-border; left: 0;
+		@media (min-width: 720px) and (max-width: 900px) { top: @header-height + (@base-margin * 2) - @base-border; }
+		@media (max-width: 719px) { top: @header-height + (@base-margin * 4) - @base-border; }
 		z-index: 100;
 		display: block;
 		width: 100%;
@@ -207,6 +237,8 @@ html, body {
 	height: 100%;
 
 	padding: (@header-height + (@base-margin * 0.5)) 0 (@share-height + (@base-margin * 0.25));
+	@media (min-width: 720px) and (max-width: 900px) { padding-top: @header-height + (@base-margin * 2.5); }
+	@media (max-width: 719px) { padding-top: @header-height + (@base-margin * 4.5); }
 
 	h1 {
 		position: absolute;
@@ -214,6 +246,8 @@ html, body {
 		display: block;
 		width: 100%;
 		height: @header-height;
+		@media (min-width: 720px) and (max-width: 900px) { height: @header-height + (@base-margin * 2); }
+		@media (max-width: 719px) { height: @header-height + (@base-margin * 4); }
 
 		.invisible;
 
@@ -221,7 +255,9 @@ html, body {
 	}
 	
 	#collection .items {
+		padding-top: 196px;
 		background: white url('../images/collection-background.png') repeat-y left top;
+		background-attachment: local;
 		> li { padding: @base-margin 0; margin: 0; background: white; }
 	}
 

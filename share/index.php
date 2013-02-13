@@ -38,7 +38,7 @@
 ?><!DOCTYPE html>
 <html itemscope itemtype="http://schema.org/ImageObject">
 	<head>
-		<title itemprop="name">#Be The Buyer</title>
+		<title itemprop="name">#BeTheBuyer</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		
 		<meta itemprop="representativeOfPage" content="true">
