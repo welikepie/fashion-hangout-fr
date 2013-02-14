@@ -58,8 +58,7 @@ html, body {
 		@base-margin
 		(@base-margin * 0.5);
 	margin-right: @listing-width + (2 * @base-margin);
-	@media (min-width: 720px) and (max-width: 900px) { padding-top: @header-height + (@base-margin * 2); }
-	@media (max-width: 719px) { padding-top: @header-height + (@base-margin * 4); }
+	@media (max-width: 899px) { padding-top: @header-height + (@base-margin * 2); }
 
 	border: @base-border solid @background-color;
 
@@ -69,18 +68,15 @@ html, body {
 		display: block;
 		width: 100%;
 		height: @header-height - @base-border;
-		@media (min-width: 720px) and (max-width: 900px) { height: @header-height + (@base-margin * 2) - @base-border; }
-		@media (max-width: 719px) { height: @header-height + (@base-margin * 4) - @base-border; }
-
-		background: @background-color;
+		.invisible;
+		background: @background-color url('../images/header.png') no-repeat 20px 18px;
+		@media (min-width: 900px) and (max-width: 1070px) { background-image: url('../images/header-medium.png'); }
+		@media (max-width: 899px) { height: @header-height + (@base-margin * 2) - @base-border; background-image: url('../images/header-small.png'); }
 
 		h1 {
 			float: left;
 			width: 246px;
 			height: 100%;
-
-			.invisible;
-			background: url('../images/header.png') no-repeat center 28px;
 		}
 		h2 {
 			margin: 16px 0 0 246px;
@@ -104,8 +100,7 @@ html, body {
 	#messages {
 		position: absolute;
 		top: @header-height - @base-border; left: 0;
-		@media (min-width: 720px) and (max-width: 900px) { top: @header-height + (@base-margin * 2) - @base-border; }
-		@media (max-width: 719px) { top: @header-height + (@base-margin * 4) - @base-border; }
+		@media (max-width: 899px) { top: @header-height + (@base-margin * 2) - @base-border; }
 		z-index: 100;
 		display: block;
 		width: 100%;
@@ -237,8 +232,7 @@ html, body {
 	height: 100%;
 
 	padding: (@header-height + (@base-margin * 0.5)) 0 (@share-height + (@base-margin * 0.25));
-	@media (min-width: 720px) and (max-width: 900px) { padding-top: @header-height + (@base-margin * 2.5); }
-	@media (max-width: 719px) { padding-top: @header-height + (@base-margin * 4.5); }
+	@media (max-width: 899px) { padding-top: @header-height + (@base-margin * 2.5); }
 
 	h1 {
 		position: absolute;
@@ -246,8 +240,7 @@ html, body {
 		display: block;
 		width: 100%;
 		height: @header-height;
-		@media (min-width: 720px) and (max-width: 900px) { height: @header-height + (@base-margin * 2); }
-		@media (max-width: 719px) { height: @header-height + (@base-margin * 4); }
+		@media (max-width: 899px) { height: @header-height + (@base-margin * 2); }
 
 		.invisible;
 
