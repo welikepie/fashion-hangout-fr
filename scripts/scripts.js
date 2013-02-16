@@ -454,7 +454,13 @@ window.init = function () {
 	Outfit = Backbone.Collection.extend({
 	
 		'model': Clothing,
-		'comparator': 'id'
+		'comparator': 'id',
+
+		'initialize': function (items, opts) {
+			opts = opts || {};
+			if ('comparator' in opts) { this.comparator = opts.comparator; }
+			Backbone.Collection.prototype.initialize.apply(this, arguments);
+		}
 	
 	});
 	
@@ -849,7 +855,7 @@ window.init = function () {
 			CollectionView.prototype.initialize.apply(this, arguments);
 			
 			if (!(this.collection instanceof Outfit)) {
-				this.collection = new Outfit();
+				this.collection = new Outfit([], {'comparator': null});
 			}
 			
 			if (('shareUrl' in opts) && (typeof opts.shareUrl === 'string')) {
@@ -883,10 +889,12 @@ window.init = function () {
 		},
 		
 		'render': _.debounce(function () {
+
+			var col = this.collection.toArray().reverse();
 		
 			this.$container
 				.empty()
-				.append(this.collection.map(function (model) {
+				.append(_.map(col, function (model) {
 				
 					var el = this.template(model.toJSON());
 					$('a', el).on('click', function () {
