@@ -2,7 +2,7 @@
 
 	define('CLOTHING_JSON', 'http://bethebuyer.topshop.com/data/clothing.jsonp');
 	define('JSONP_OFFSET_START', 7);
-	define('JSONP_OFFSET_END', 2);
+	define('JSONP_OFFSET_END', 3);
 	
 	// Retrieve and parse the IDs of clothing used in this instance
 	$clothes_id = array_map("intval", explode(",", $_GET['c']));
@@ -82,8 +82,8 @@
 		</section>
 		<footer>
 			<p>Take part in Be The Buyer for your chance to win a shopping spree!</p>
-			<a href="https://plus.google.com/hangouts/_?gid=933972638530" target="_blank" class="app">Launch the App</a>
-			<a href="../branding/tos_policy.htm" target="_blank" class="terms">Terms &amp; Conditions</a>
+			<a href="http://bethebuyer.topshop.com" target="_blank" class="app">Launch the App</a>
+			<a href="http://www.topshop.com/webapp/wcs/stores/servlet/CatalogNavigationSearchResultCmd?catalogId=33057&storeId=12556&langId=-1&viewAllFlag=false&categoryId=259987&interstitial=true&intcmpid=W_FOOTER_WK45_HP_UK_TERMSCONDITIONS" target="_blank" class="terms">Terms &amp; Conditions</a>
 		</footer>
 	</body>
 </html>

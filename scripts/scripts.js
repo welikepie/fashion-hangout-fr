@@ -476,6 +476,7 @@ window.init = function () {
 					
 					if (('playlist' in opts) && (opts.playlist instanceof PlaylistView)) {
 						this.playlist = opts.playlist;
+						this.playlist.feed = this;
 						if (this.playlist.collection !== this.collection) {
 							this.playlist.collection = this.collection;
 							this.playlist.render();
@@ -528,7 +529,7 @@ window.init = function () {
 			root.play = function () { $('video', this.feed).get(0).play(); };
 			root.pause = function () { $('video', this.feed).get(0).pause(); };
 		
-			root.render = _.debounce(function () {
+			root.render = function () {
 		
 				var current = this.collection.getCurrent(),
 					new_feed;
@@ -545,7 +546,7 @@ window.init = function () {
 				}
 
 				$('video', new_feed)
-					.on('ended', function () { if (admin()) { this.collection.nextVideo(); } }.bind(this))
+					//.on('ended', function () { if (admin()) { this.collection.nextVideo(); } }.bind(this))
 					.on('play', function () { if (admin()) { MessageBus.send('playback', 'play'); } })
 					.on('pause', function () { if (admin()) { MessageBus.send('playback', 'pause'); } });
 				
@@ -556,7 +557,7 @@ window.init = function () {
 				}
 				this.feed = new_feed;
 			
-			}, 100);
+			};
 		
 		} else {
 		
@@ -570,11 +571,11 @@ window.init = function () {
 				
 				this.player = flowplayer(this.feed, 'scripts/other/flowplayer-3.2.15.swf', {
 					'clip': { // Clip is an object, hence '{...}'
-						'autoPlay': true,
+						'autoPlay': false,
 						'autoBuffering': true,
 						'scaling': 'fit',
 
-						'onFinish': this.collection.nextVideo.bind(this.collection),
+						//'onFinish': this.collection.nextVideo.bind(this.collection),
 						'onResume': function () { if (admin()) { MessageBus.send('playback', 'play'); } },
 						'onPause': function () { if (admin()) { MessageBus.send('playback', 'pause'); } }
 					}
@@ -778,7 +779,11 @@ window.init = function () {
 
 					var el = $(this.template(model.toJSON()));
 
-					el.on('click', admin(this.collection.setCurrent).bind(this.collection, model));
+					el.on('click', function () {
+						this.collection.setCurrent(model);
+						if (this.feed) { this.feed.play(); }
+					}.bind(this));
+					//el.on('click', admin(this.collection.setCurrent).bind(this.collection, model));
 
 					return el.get(0);
 				
