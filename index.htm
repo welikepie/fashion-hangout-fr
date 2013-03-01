@@ -4,7 +4,6 @@
 		<title>Topshop - Be The Buyer</title>
 		<!--<base href="">-->
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<link rel="stylesheet" href="styles/bootstrap.min.css">
 		<link rel="stylesheet" href="styles/styles.css">
 		<script type="text/javascript" src="scripts/other/modernizr.js"></script>
 		<script type="text/javascript">
@@ -29,11 +28,13 @@
 
 		<div class="main">
 
-			<header>
-				<h1>Topshop</h1>
-				<h2>Unique AW13 : Be The Buyer</h2>
-				<p>Watch the clips below and when you see an item you love, drag it into your collection on the right. Share it with your friends on Google+ using #BeTheBuyer for your chance to win a shopping spree!</p>
-			</header>
+			<!--<a class="header" href="" target="_blank">-->
+				<header>
+					<h1>Topshop</h1>
+					<h2>Unique AW13 : Be The Buyer</h2>
+					<p>Watch the clips below and when you see an item you love, drag it into your collection on the right. Share it with your friends on Google+ using #BeTheBuyer for your chance to win a shopping spree!</p>
+				</header>
+			<!--</a>-->
 
 			<div id="messages">
 				<div><!--!message!--></div>
@@ -63,7 +64,7 @@
 				</section>
 
 				<div id="feed">
-					<video poster="<!--!poster!-->" controls autoplay>
+					<video poster="<!--!poster!-->" controls>
 						<!--% _.each(sources, function (val, key) { %-->
 						<source type="<!--!key!-->" src="<!--!val!-->">
 						<!--% }); %-->

@@ -476,6 +476,7 @@ window.init = function () {
 					
 					if (('playlist' in opts) && (opts.playlist instanceof PlaylistView)) {
 						this.playlist = opts.playlist;
+						this.playlist.feed = this;
 						if (this.playlist.collection !== this.collection) {
 							this.playlist.collection = this.collection;
 							this.playlist.render();
@@ -528,7 +529,7 @@ window.init = function () {
 			root.play = function () { $('video', this.feed).get(0).play(); };
 			root.pause = function () { $('video', this.feed).get(0).pause(); };
 		
-			root.render = _.debounce(function () {
+			root.render = function () {
 		
 				var current = this.collection.getCurrent(),
 					new_feed;
@@ -545,7 +546,7 @@ window.init = function () {
 				}
 
 				$('video', new_feed)
-					.on('ended', function () { if (admin()) { this.collection.nextVideo(); } }.bind(this))
+					//.on('ended', function () { if (admin()) { this.collection.nextVideo(); } }.bind(this))
 					.on('play', function () { if (admin()) { MessageBus.send('playback', 'play'); } })
 					.on('pause', function () { if (admin()) { MessageBus.send('playback', 'pause'); } });
 				
@@ -556,7 +557,7 @@ window.init = function () {
 				}
 				this.feed = new_feed;
 			
-			}, 100);
+			};
 		
 		} else {
 		
@@ -570,11 +571,11 @@ window.init = function () {
 				
 				this.player = flowplayer(this.feed, 'scripts/other/flowplayer-3.2.15.swf', {
 					'clip': { // Clip is an object, hence '{...}'
-						'autoPlay': true,
+						'autoPlay': false,
 						'autoBuffering': true,
 						'scaling': 'fit',
 
-						'onFinish': this.collection.nextVideo.bind(this.collection),
+						//'onFinish': this.collection.nextVideo.bind(this.collection),
 						'onResume': function () { if (admin()) { MessageBus.send('playback', 'play'); } },
 						'onPause': function () { if (admin()) { MessageBus.send('playback', 'pause'); } }
 					}
@@ -778,7 +779,11 @@ window.init = function () {
 
 					var el = $(this.template(model.toJSON()));
 
-					el.on('click', admin(this.collection.setCurrent).bind(this.collection, model));
+					el.on('click', function () {
+						this.collection.setCurrent(model);
+						if (this.feed) { this.feed.play(); }
+					}.bind(this));
+					//el.on('click', admin(this.collection.setCurrent).bind(this.collection, model));
 
 					return el.get(0);
 				
@@ -793,8 +798,6 @@ window.init = function () {
 	}()));
 
 	Catalogue = CollectionView.extend({
-
-		'overCollection': false,
 	
 		'initialize': function () {
 		
@@ -807,8 +810,47 @@ window.init = function () {
 		},
 		
 		'render': _.debounce(function () {
-		
+
 			this.$container
+				.children()
+					.draggable('destroy')
+				.end()
+				.empty();
+			var els = $(this.collection.map(function (model) {
+					return $(this.template(model.toJSON()))
+						.data('model', model)
+						.get(0);
+				}.bind(this)))
+					.on('click', function () { App.trigger('addedToWishlist', $(this).data('model')); })
+					.draggable({
+						'addClasses': false,
+						'appendTo': 'body',
+						'containment': 'window',
+						'cursor': 'move',
+						'distance': 4,
+						'helper': function () {
+							var $this = $('img', this),
+								width = $this.width(),
+								height = $this.height();
+							return $this
+								.clone()
+								.width(width)
+								.height(height)
+								.get(0);
+						},
+						'opacity': 0.5,
+						'revert': true,
+						'revertDuration': 0,
+						'scroll': false,
+						'zIndex': 2000,
+
+						'scope': 'collection',
+						'start': function () { $(this).fadeTo(0, 0); },
+						'stop': function () { $(this).removeAttr('style'); }
+					});
+			this.$container.append(els);
+		
+			/*this.$container
 				.empty()
 				.append(this.collection.map(function (model) {
 					
@@ -837,7 +879,7 @@ window.init = function () {
 
 					return el.get(0);
 				
-				}.bind(this)));
+				}.bind(this)));*/
 			
 			return this;
 		
@@ -885,6 +927,14 @@ window.init = function () {
 			}
 			
 			this.listenTo(this.collection, 'add remove reset', this.render);
+			this.$container.droppable({
+				'addClasses': false,
+				'scope': 'collection',
+				'tolerance': 'intersect',
+				'drop': function (ev, ui) {
+					App.trigger('addedToWishlist', ui.draggable.data('model'));
+				}
+			});
 		
 		},
 		
@@ -1065,7 +1115,7 @@ window.init = function () {
 					}.bind(this));
 
 					// Bind the event on item being added to wishlist
-					this.listenTo(this.catalogue, 'addedToWishlist', function (item) {
+					var wishlist_func = function (item) {
 						
 						_gaq.push(['_setCustomVar', 1, 'Clothing Item', '' + item.get('id')]);
 						_gaq.push(['_trackEvent', 'Interaction', 'Item Added']);
@@ -1081,7 +1131,9 @@ window.init = function () {
 							);
 						}
 					
-					}.bind(this));
+					}.bind(this);
+					this.on('addedToWishlist', wishlist_func);
+					this.listenTo(this.catalogue, 'addedToWishlist', wishlist_func);
 				
 				} else { throw new Error('Need a playlist.'); }
 
