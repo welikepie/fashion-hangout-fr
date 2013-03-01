@@ -22,6 +22,7 @@ Icon
 # Temp files, logs and similar garbage
 *.tmp
 *.log
+*.dat
 
 # Build-related files (this section should include location of all build-related bits)
 build/

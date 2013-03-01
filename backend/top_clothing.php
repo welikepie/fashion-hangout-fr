@@ -33,8 +33,8 @@
 		list($credentials, $result, $mtime) = unserialize(file_get_contents(CACHE_FILENAME));
 	} else {
 		$credentials = array(
-			'client_id' => '933972638530-gga9ju41ks53ju4vfmrlssrekmdcc0go.apps.googleusercontent.com',
-			'client_secret' => 'od-pvsUFJm0y_BiTZ4R49yaB',
+			'client_id' => '200508256858.apps.googleusercontent.com',
+			'client_secret' => 'GBOEe5sC44ZiVv8TZmsVotgM',
 			'refresh_token' => NULL,
 			'access_token' => NULL,
 			'token_expiry' => 0

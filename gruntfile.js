@@ -1,18 +1,13 @@
 /*global module:false, require:true */
 module.exports = function (grunt) {
 	"use strict";
-	
+
 	grunt.initConfig({
-	
-		'clean': {
-			'init': ['build'],
-			'release': ['build/index.htm', 'build/styles', 'build/.htaccess']
-		},
-		
+
+		'pkg': grunt.file.readJSON('package.json'),
+
 		'recess': {
-		
-			// Linting task runs RECESS without compilation, just for checking
-			// the contents of all .less files, to report any errors or warnings.
+
 			'lint': {
 				'src': 'styles/*.less',
 				'options': {
@@ -23,12 +18,7 @@ module.exports = function (grunt) {
 					'noOverqualifying': false
 				}
 			},
-			
-			// Compilation tasks should only use the main .less files as source;
-			// RECESS doesn't process the @import statements, so compiling the file
-			// already included with @import will cause duplicates to show up.
-			
-			// Tasks used for development should disable compression to increase readability.
+
 			'dev': {
 				'options': {
 					'compile': true,
@@ -37,8 +27,7 @@ module.exports = function (grunt) {
 				'src': 'styles/*.less',
 				'dest': 'build/styles/styles.css'
 			},
-			
-			// Release tasks can match the dev tasks, with compression enabled.
+
 			'release': {
 				'options': {
 					'compile': true,
@@ -47,9 +36,8 @@ module.exports = function (grunt) {
 				'src': '<%= recess.dev.src %>',
 				'dest': '<%= recess.dev.dest %>'
 			}
-		
 		},
-		
+
 		'jshint': {
 		
 			'options': {
@@ -72,88 +60,114 @@ module.exports = function (grunt) {
 					'devel': true,
 					'unused': false
 				},
-				'files': {
-					'src': ['gruntfile.js', 'scripts/*.js']
-				}
+				'src': ['gruntfile.js', 'scripts/*.js']
 			},
 			'release': {
 				'options': {
-					'devel': false
+					'devel': false,
+					'unused': true
 				},
-				'files': {
-					'src': 'scripts/*.js'
-				}
+				'src': 'scripts/*.js'
 			}
 		
 		},
-		
+
 		'concat': {
-		
-			'custom': {
-				'options': {'separator': ";\n\n"},
-				'files': {'build/scripts/scripts.js':  'scripts/*.js'}
+			'main': {
+				'src': 'scripts/*.js',
+				'dest': 'build/scripts/scripts.js',
+				'options': { 'separator': ";\n\n" }
 			},
 			'vendor': {
-				'options': {'separator': ";"},
-				'files': {'build/scripts/vendor.js': 'scripts/vendor/**/*.js'}
+				'src': 'scripts/vendor/**/*.js',
+				'dest': 'build/scripts/vendor.js',
+				'options': { 'separator': ";" }
 			}
-		
 		},
-		
+
 		'uglify': {
-			'options': {
-				'mangle': true,
-				'compress': true,
-				'preserveComments': false
+			'main': {
+				'src': 'scripts/*.js',
+				'dest': 'build/scripts/scripts.js',
+				'options': {
+					'mangle': true,
+					'compress': true,
+					'preserveComments': false
+				}
 			},
-			'release': {
-				'files': {
-					'build/scripts/scripts.js': 'scripts/*.js',
-					'build/scripts/vendor.js': 'scripts/vendor/**/*.js'
+			'vendor': {
+				'src': 'scripts/vendor/**/*.js',
+				'dest': 'build/scripts/vendor.js',
+				'options': {
+					'mangle': true,
+					'compress': true,
+					'preserveComments': false
 				}
 			}
 		},
-		
-		'process': {
-			'css': {
-				'options': {
-					'preprocess': function (content) {
-						return content
-							.replace(
-								/<link(?:[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*|[^>]*href="([^"]+)"[^>]*rel="stylesheet"[^>]*)>/gi,
-								"<style type=\"text/css\"><%= grunt.file.read('build/$1') %></style>"
-							).replace(
-								/<!--<base[^>]*>-->/i,
-								"<base href=\"https://dev.welikepie.com:444/fashion-dev/\">"
-							);
-					},
-					'postprocess': function (content) {
-						return content.replace(/\.\.\/images/gi, 'https://dev.welikepie.com:444/fashion-dev/images');
+
+		'clean': {
+			'build': { 'src': ['build'] },
+			'release': { 'src': ['build/index.htm', 'build/styles'] }
+		},
+
+		'copy': (function () {
+
+			var deep_copy = function (location, pattern, filter) {
+				pattern = pattern || '**/*';
+				filter = filter || 'isFile';
+				return {
+					'src': pattern,
+					'dest': 'build/' + location,
+					'cwd': location,
+					'expand': true,
+					'filter': filter
+				};
+			};
+
+			return {
+				'access': { 'src': '.htaccess', 'dest': 'build/.htaccess' },
+				'data': deep_copy('data/'),
+				'scripts': deep_copy('scripts/other/'),
+				'images': deep_copy('images/'),
+				'branding': deep_copy('branding/'),
+				'backend': deep_copy('backend/'),
+				'share': deep_copy('share/'),
+
+				'html-dev': { 'src': 'index.htm', 'dest': 'build/index.htm' },
+				'html-release': {
+					'src': 'index.htm',
+					'dest': 'build/index.htm',
+					'options': {
+						'processContent': function (content) {
+							return grunt.template.process(content
+								.replace(
+									/<link(?:[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*|[^>]*href="([^"]+)"[^>]*rel="stylesheet"[^>]*)>/gi,
+									function (match, file) {
+										var baseUrl = grunt.config.get('pkg.app.baseUrl'),
+											css = grunt.file.read('build/' + file).replace(
+												/\.\.\/images/gi,
+												baseUrl + 'images'
+											).replace(/\s+/gi, ' ');
+										return '<style type="text/css">' + css + '</style>';
+									}
+								)
+								.replace(
+									/<!--<base[^>]*>-->/i,
+									"<base href=\"<%= pkg.app.baseUrl %>\">"
+								));
+						}
 					}
 				},
-				'files': {'build/index.htm': 'index.htm'}
-			},
-			'xml': {
-				'files': {'build/app.xml': 'app.xml'}
-			}
-		},
-		
-		'copy': {
-			'html': {
-				'files': {
-					'build/index.htm': 'index.htm',
-					'build/.htaccess': '.htaccess'
+				'xml': {
+					'src': 'app.xml',
+					'dest': 'build/app.xml',
+					'options': { 'processContent': grunt.template.process }
 				}
-			},
-			'scripts': { 'files': { 'build/scripts/other/': 'scripts/other/*' } },
-			'images': { 'files': { 'build/images/': 'images/*' } },
-			'data': { 'files': { 'build/data/': 'data/*' } },
-			//'css': { 'files': { 'build/styles/': 'styles/*.css' } },
-			'branding': { 'files': { 'build/branding/': 'branding/*' } },
-			'backend': { 'files': { 'build/backend/': 'backend/*' } },
-			'share': { 'files': { 'build/share/': 'share/*' } }
-		},
-		
+			};
+
+		}()),
+
 		'watch': {
 			'less': {
 				'files': 'styles/**/*.less',
@@ -161,7 +175,7 @@ module.exports = function (grunt) {
 			},
 			'js-main': {
 				'files': 'scripts/*.js',
-				'tasks': ['jshint:dev', 'concat:custom']
+				'tasks': ['jshint:dev', 'concat:main']
 			},
 			'js-vendor': {
 				'files': 'scripts/vendor/**/*.js',
@@ -170,120 +184,22 @@ module.exports = function (grunt) {
 			'html': {
 				'files': 'index.htm',
 				'tasks': ['copy:html']
-			}/*,
-			'css': {
-				'files': 'styles/*.css',
-				'tasks': ['copy:css']
-			}*/
-		},
-		
-		'ftp-deploy': {
-			'build': {
-				'auth': {
-					'host': 'dev.welikepie.com',
-					'port': 21,
-					'authKey': 'user'
-				},
-				'src': 'build',
-				'dest': '/BeTheBuyer'
 			}
 		}
-	
+
 	});
-	
-	grunt.registerTask('dev', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy', 'watch']);
-	grunt.registerTask('dev-deploy', ['clean:init', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy:scripts', 'copy:images', /*'copy:css',*/ 'process', 'clean:release', 'ftp-deploy']);
-	grunt.registerTask('release', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy', 'process', 'clean:release']);
-	grunt.registerTask('release-deploy', ['clean:init', 'recess:lint', 'recess:release', 'jshint:release', 'uglify:release', 'copy', 'process', 'clean:release', 'ftp-deploy']);
-	grunt.registerTask('default', 'dev');
-	
-	/* ************************************************ */
-	
+
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-contrib-watch');
-	grunt.loadNpmTasks('grunt-ftp-deploy');
 	grunt.loadNpmTasks('grunt-recess');
-	
-	grunt.registerMultiTask('process', 'Process files using Grunt templating.', function() {
-	
-		var path = require('path'),
-			helpers = require('grunt-lib-contrib').init(grunt),
-		
-			options,
-			source_files,
-			destination_path,
-			base_path,
-			single_file_source,
-			destination_is_file;
-	
-		path.sep = path.sep || path.normalize('/');
-		options = this.options({
-			'cwd': false,
-			'preprocess': null,
-			'postprocess': null
-		});
-		grunt.verbose.writeflags(options, 'Options');
-		
-		source_files = grunt.file.expand(this.file.srcRaw);
-		destination_path = this.file.dest;
-		
-		single_file_source = (source_files.length === 1) && (this.file.srcRaw[0] === source_files[0]);
-		destination_is_file = !grunt.util._.endsWith(destination_path, path.sep);
-		
-		if (!destination_is_file) {
-			base_path = helpers.findBasePath(source_files, options.basePath);
-		}
-		
-		if (single_file_source) {
-			grunt.verbose.or.write('Copying file' + ' to ' + destination_path.cyan + '...');
-		} else {
-			grunt.verbose.or.write('Copying files' + ' to ' + destination_path.cyan + '...');
-		}
-		
-		source_files.forEach(function (filepath) {
-		
-			var content,
-				destination,
-				
-				basename,
-				dirname;
-		
-			if (destination_is_file) {
-				if (single_file_source) {
-			
-					destination = destination_path;
-			
-				} else {
-					grunt.fail.warn('Unable to process multiple files to the same destination filename, did you forget a trailing slash?');
-				}
-			} else {
-			
-				filepath = path.normalize(filepath);
-				basename = path.basename(filepath);
-				dirname = path.dirname(filepath);
-				
-				if (base_path) {
-					dirname = grunt.util._(dirname).strRight(base_path).trim(path.sep);
-				}
-				
-				destination = path.join(destination_path, dirname, basename);
-			
-			}
-			
-			content = grunt.file.read(filepath);
-			if (typeof options.preprocess === 'function') { content = options.preprocess(content); }
-			content = grunt.template.process(content);
-			if (typeof options.postprocess === 'function') { content = options.postprocess(content); }
-			grunt.file.write(destination, content);
-		
-		});
-		
-		grunt.verbose.or.ok();
-	
-	});
-	
+
+	grunt.registerTask('copy-misc', ['copy:access', 'copy:data', 'copy:scripts', 'copy:images', 'copy:branding', 'copy:backend', 'copy:share']);
+
+	grunt.registerTask('dev', ['clean:build', 'recess:lint', 'recess:dev', 'jshint:dev', 'concat', 'copy:html-dev', 'copy-misc', 'watch']);
+	grunt.registerTask('release', ['clean:build', 'recess:lint', 'recess:release', 'jshint:release', 'uglify', 'copy:html-release', 'copy:xml', 'copy-misc', 'clean:release']);
+
 };
